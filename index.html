@@ -31,6 +31,7 @@
     background: var(--bg);
     color: var(--text);
     height: 100%;
+    overflow: hidden;
   }
 
   #page {
@@ -38,8 +39,8 @@
     max-width: 480px;
     margin: 0 auto;
     padding: calc(18px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
   }
@@ -57,11 +58,12 @@
     font-variant-numeric: tabular-nums;
   }
   .board-head .settings-btn {
-    appearance: none; border: 1px solid var(--line); background: transparent; color: var(--text);
+    appearance: none; border: 1.5px solid var(--day); background: color-mix(in srgb, var(--day) 16%, transparent);
+    color: var(--day); font-weight: 700;
     border-radius: 999px; padding: 8px 12px; font-size: .76rem; cursor: pointer; font-family: inherit;
     flex: none; min-height: 36px;
   }
-  .board-head .settings-btn:active { background: var(--panel); }
+  .board-head .settings-btn:active { background: color-mix(in srgb, var(--day) 30%, transparent); }
 
   .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; font-size: .74rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .04em; flex: none; }
   .legend .chip { display: flex; align-items: center; gap: 5px; }
@@ -75,10 +77,13 @@
   .weekdays span:first-child { color: #E06B5C; }
   .weekdays span:last-child { color: #6B9CF7; }
 
+  .grid-clip { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+
   .grid {
     display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
     border: 1px solid var(--line); background: var(--line);
-    flex: 1 1 auto; min-height: 0;
+    height: 100%;
+    touch-action: pan-y;
   }
 
   .day {
@@ -93,44 +98,67 @@
     padding: 7px 8px;
     min-width: 0;
     min-height: 0;
+    overflow: hidden;
   }
   .day.outside { pointer-events: none; opacity: .3; background: var(--bg); }
   .day:active:not(.outside) { background: #212832; }
   .day:focus-visible { outline: 2px solid var(--night); outline-offset: -2px; z-index: 2; }
 
+  /* status badge (주/야/비/휴) on the left, date number on the right — one row */
+  .top-row {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 6px; flex: none;
+  }
   .day .num {
     font-family: 'SF Mono', Consolas, monospace; font-variant-numeric: tabular-nums;
-    font-size: .88rem; color: var(--text-dim); align-self: flex-end;
+    font-size: .88rem; color: var(--text-dim);
   }
   .day.is-today { box-shadow: inset 0 0 0 1.5px var(--today); }
-  .day.is-today .num { color: var(--today); }
+  .day.sat .num { color: var(--night); }
+  .day.sun .num { color: var(--rest); }
   .day.holiday .num { color: var(--rest); font-weight: 700; }
 
   .day .badge {
-    position: absolute; top: 7px; left: 8px;
     font-size: .8rem; font-weight: 700; color: var(--cell-color);
+    display: flex; align-items: center; white-space: nowrap; min-width: 0;
   }
   .day .badge::before {
     content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
-    background: var(--cell-color); box-shadow: 0 0 6px 1px var(--cell-color); margin-right: 4px;
+    background: var(--cell-color); box-shadow: 0 0 6px 1px var(--cell-color); margin-right: 4px; flex: none;
+  }
+
+  /* holiday name sits right under the date, with a solid color chip so it
+     reads clearly at a glance */
+  .holiday-label {
+    margin-top: 3px; align-self: flex-start; flex: none;
+    font-size: .62rem; font-weight: 700; line-height: 1.2; color: #fff;
+    background: var(--rest); border-radius: 4px; padding: 1px 5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
+
+  /* memo + team-of-the-day indicator are stacked in their own rows at the
+     bottom of the cell, each getting the cell's FULL width — they never
+     share a row, so neither one ever has to give up horizontal space to
+     the other (that width-sharing is what caused memo text to wrap to a
+     single character per line on narrow phones) */
+  .bottom-block {
+    margin-top: auto; display: flex; flex-direction: column; gap: 2px; min-width: 0;
   }
 
   .day .memo {
-    margin-top: auto; font-size: .7rem; line-height: 1.3; color: var(--text-dim);
-    border-top: 1px solid var(--line); padding-top: 4px; padding-right: 24px;
-    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3;
-    overflow: hidden;
+    font-size: .6rem; line-height: 1.22; color: var(--text);
+    background: color-mix(in srgb, var(--cell-color) 22%, transparent);
+    border-radius: 4px; padding: 2px 4px;
+    max-height: 4.4em; overflow: hidden;
+    word-break: break-word;
   }
-  .day .memo.holiday-name { color: var(--rest); }
 
-  /* compact day-team/night-team indicator, e.g. "A>D" — tucked in the corner
-     so it never competes with the memo line for space */
+  /* compact day-team/night-team indicator, e.g. "A>D" */
   .teaminfo {
-    position: absolute; right: 7px; bottom: 5px;
+    align-self: flex-end;
     display: flex; flex-direction: row; align-items: baseline; gap: 1px;
     white-space: nowrap;
     font-family: 'SF Mono', Consolas, monospace;
-    font-size: .64rem; line-height: 1; opacity: .55; color: var(--text-dim);
+    font-size: .64rem; line-height: 1; opacity: .6; color: var(--text-dim);
     font-variant-numeric: tabular-nums;
   }
   .teaminfo .me { opacity: 1; font-weight: 700; color: var(--cell-color); }
@@ -222,7 +250,6 @@
     min-height: 44px;
   }
   .team-picker button[aria-pressed="true"] { border-color: var(--day); background: color-mix(in srgb, var(--day) 16%, transparent); color: var(--day); }
-  .hint { font-size: .74rem !important; opacity: .55; margin: 8px 0 18px !important; }
 </style>
 </head>
 <body>
@@ -238,7 +265,9 @@
   <div class="weekdays">
     <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
   </div>
-  <div class="grid" id="calendarGrid"></div>
+  <div class="grid-clip">
+    <div class="grid" id="calendarGrid"></div>
+  </div>
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -257,13 +286,9 @@
 
 <div class="modal-scrim" id="settingsScrim">
   <div class="modal">
-    <h3>내 조 &amp; 근무 시작일</h3>
-    <p>4개 조(A·B·C·D)는 2일씩 어긋난 같은 8일 주기로 돌아갑니다. 내 조와, 내 조가 "주간"으로 시작하는 기준일을 설정하세요.</p>
-    <div class="field-label">내 조</div>
+    <h3>내 조 설정</h3>
+    <p>4개 조(A·B·C·D)는 2일씩 어긋난 같은 8일 주기로 근무합니다. 내가 속한 조를 선택하세요.</p>
     <div class="team-picker" id="teamPicker"></div>
-    <div class="field-label">근무 시작일</div>
-    <input type="date" id="patternStartInput" />
-    <p class="hint" id="patternHint"></p>
     <div class="modal-actions">
       <button type="button" id="settingsCancel">취소</button>
       <button type="button" class="primary" id="settingsSave">저장</button>
@@ -279,6 +304,13 @@
   var STATUS_LIST = ['주간', '야간', '비번', '휴무'];
   var TEAM_ORDER = ['A', 'B', 'C', 'D'];
   var TEAM_INDEX = { A: 0, B: 1, C: 2, D: 3 };
+
+  // Fixed, permanent reference point for the whole rotation: on this date,
+  // team B starts its "주간" (day-shift) turn. Every team's schedule, forever
+  // in the past or future, is computed from this single fixed anchor — it is
+  // not user-editable.
+  var ANCHOR_DATE = '2026-07-02';
+  var ANCHOR_TEAM = 'B';
 
   // 2026년 대한민국 법정공휴일(대체공휴일 포함). 제헌절은 2026.5.11 시행된
   // 개정 법률로 19년 만에 공휴일로 재지정되어 포함함. 다른 연도는 아직 데이터가 없음.
@@ -309,7 +341,6 @@
   var todayStr = fmt(today.getFullYear(), today.getMonth() + 1, today.getDate());
 
   var state = {
-    patternStart: fmt(today.getFullYear(), today.getMonth() + 1, 1),
     myTeam: 'A',
     year: today.getFullYear(),
     month: today.getMonth() + 1,
@@ -317,13 +348,12 @@
     activeDate: null
   };
 
-  // Each visitor's own team/start-date/memos are saved to their own browser
-  // (localStorage), so nothing here is shared between different people.
+  // Each visitor's own team/memos are saved to their own browser (localStorage),
+  // so nothing here is shared between different people.
   var STORAGE_KEY = 'work-schedule-app-v1';
   function saveState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        patternStart: state.patternStart,
         myTeam: state.myTeam,
         overrides: state.overrides
       }));
@@ -337,7 +367,6 @@
   }
   var saved = loadState();
   if (saved) {
-    if (saved.patternStart) state.patternStart = saved.patternStart;
     if (saved.myTeam) state.myTeam = saved.myTeam;
     if (saved.overrides) state.overrides = saved.overrides;
   }
@@ -359,8 +388,9 @@
   }
   // Teams are the same 8-day pattern offset by 2 days from each other (A→B→C→D→A…),
   // which guarantees exactly one team is 주간 and one is 야간 on any given day.
+  // Always computed from the fixed ANCHOR_DATE/ANCHOR_TEAM above.
   function getTeamStart(team) {
-    return addDays(state.patternStart, 2 * (TEAM_INDEX[team] - TEAM_INDEX[state.myTeam]));
+    return addDays(ANCHOR_DATE, 2 * (TEAM_INDEX[team] - TEAM_INDEX[ANCHOR_TEAM]));
   }
   function getTeamStatusOn(team, dateStr) {
     var diff = diffDays(getTeamStart(team), dateStr);
@@ -448,12 +478,17 @@
     // month actually needs (4–6), each stretched to share the leftover height.
     grid.style.gridTemplateRows = 'repeat(' + (cells.length / 7) + ', 1fr)';
 
-    cells.forEach(function (c) {
+    cells.forEach(function (c, idx) {
       var dateStr = fmt(c.y, c.m, c.d);
       var holidayName = HOLIDAYS[dateStr];
+      var weekday = idx % 7; // grid always starts on Sunday (column 0), per the 일월화수목금토 header
       var btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'day' + (c.outside ? ' outside' : '') + (dateStr === todayStr ? ' is-today' : '') + (holidayName ? ' holiday' : '');
+      btn.className = 'day'
+        + (c.outside ? ' outside' : '')
+        + (dateStr === todayStr ? ' is-today' : '')
+        + (holidayName ? ' holiday' : '')
+        + (weekday === 0 ? ' sun' : weekday === 6 ? ' sat' : '');
       btn.dataset.date = dateStr;
 
       if (!c.outside) {
@@ -462,17 +497,43 @@
         btn.dataset.status = status;
         btn.style.setProperty('--cell-color', 'var(--' + STATUS_TOKEN[status] + ')');
 
-        var num = document.createElement('span');
-        num.className = 'num';
-        num.textContent = c.d;
-        btn.appendChild(num);
+        // Status badge (주/야/비/휴) on the left, date number on the right — one row.
+        var topRow = document.createElement('span');
+        topRow.className = 'top-row';
 
         var badge = document.createElement('span');
         badge.className = 'badge';
         badge.textContent = STATUS_SHORT[status];
-        btn.appendChild(badge);
+        topRow.appendChild(badge);
 
-        // Compact day-team/night-team indicator, e.g. "A>D" (day team, night team).
+        var num = document.createElement('span');
+        num.className = 'num';
+        num.textContent = c.d;
+        topRow.appendChild(num);
+
+        btn.appendChild(topRow);
+
+        // Holiday name directly under the date, as its own solid-color chip.
+        if (holidayName) {
+          var holidayEl = document.createElement('span');
+          holidayEl.className = 'holiday-label';
+          holidayEl.textContent = holidayName;
+          btn.appendChild(holidayEl);
+        }
+
+        // Memo and the day-team/night-team indicator ("A>D") are stacked in
+        // their own rows here, each using the cell's full width, so they
+        // never have to split a row's width with each other.
+        var bottomBlock = document.createElement('span');
+        bottomBlock.className = 'bottom-block';
+
+        if (memo) {
+          var memoEl = document.createElement('span');
+          memoEl.className = 'memo';
+          memoEl.textContent = memo;
+          bottomBlock.appendChild(memoEl);
+        }
+
         var dn = getDayNightTeams(dateStr);
         var teaminfo = document.createElement('span');
         teaminfo.className = 'teaminfo';
@@ -488,16 +549,12 @@
         teaminfo.appendChild(daySpan);
         teaminfo.appendChild(sep);
         teaminfo.appendChild(nightSpan);
-        btn.appendChild(teaminfo);
+        bottomBlock.appendChild(teaminfo);
 
-        if (memo || holidayName) {
-          var memoEl = document.createElement('span');
-          memoEl.className = 'memo' + (!memo && holidayName ? ' holiday-name' : '');
-          memoEl.textContent = memo || holidayName;
-          btn.appendChild(memoEl);
-        }
+        btn.appendChild(bottomBlock);
 
         btn.addEventListener('click', function () {
+          if (justSwiped) return;
           openEditor(this.dataset.date);
         });
       } else {
@@ -589,16 +646,11 @@
     renderGrid();
   });
 
-  // ---- settings modal ----
+  // ---- settings modal (team choice only — the rotation's start date is
+  // fixed forever at ANCHOR_DATE/ANCHOR_TEAM above and isn't user-editable) ----
   var settingsScrim = document.getElementById('settingsScrim');
-  var patternStartInput = document.getElementById('patternStartInput');
-  var patternHint = document.getElementById('patternHint');
   var teamPicker = document.getElementById('teamPicker');
   var draftTeam = state.myTeam;
-
-  function updatePatternHint() {
-    patternHint.textContent = '이 날짜부터 ' + draftTeam + '조가 "주간" 근무를 시작하는 것으로 계산합니다.';
-  }
 
   TEAM_ORDER.forEach(function (t) {
     var b = document.createElement('button');
@@ -610,18 +662,15 @@
       Array.prototype.forEach.call(teamPicker.children, function (c) {
         c.setAttribute('aria-pressed', c === b ? 'true' : 'false');
       });
-      updatePatternHint();
     });
     teamPicker.appendChild(b);
   });
 
   document.getElementById('settingsBtn').addEventListener('click', function () {
     draftTeam = state.myTeam;
-    patternStartInput.value = state.patternStart;
     Array.prototype.forEach.call(teamPicker.children, function (c) {
       c.setAttribute('aria-pressed', c.dataset.team === draftTeam ? 'true' : 'false');
     });
-    updatePatternHint();
     settingsScrim.classList.add('open');
     lockScroll(true);
   });
@@ -631,9 +680,6 @@
   });
   document.getElementById('settingsSave').addEventListener('click', function () {
     state.myTeam = draftTeam;
-    if (patternStartInput.value) {
-      state.patternStart = patternStartInput.value;
-    }
     saveState();
     renderHeader();
     renderGrid();
@@ -642,15 +688,111 @@
   });
 
   // ---- month nav ----
-  document.getElementById('prevMonth').addEventListener('click', function () {
-    state.month -= 1;
-    if (state.month === 0) { state.month = 12; state.year -= 1; }
+  var calendarGrid = document.getElementById('calendarGrid');
+  var ANIM_MS = 220;
+  var SWIPE_THRESHOLD = 46;
+  var justSwiped = false;
+
+  function applyMonthDelta(delta) {
+    if (delta < 0) {
+      state.month -= 1;
+      if (state.month === 0) { state.month = 12; state.year -= 1; }
+    } else {
+      state.month += 1;
+      if (state.month === 13) { state.month = 1; state.year += 1; }
+    }
     render();
+  }
+
+  // Slide the whole grid out in `direction`, swap in the new month positioned
+  // just off the opposite edge, then slide it into place — used for both the
+  // ‹/› buttons and a released swipe past the threshold.
+  function animateMonthChange(direction) {
+    var exitTo = direction < 0 ? '100%' : '-100%';
+    var enterFrom = direction < 0 ? '-100%' : '100%';
+    justSwiped = true;
+    calendarGrid.style.transition = 'transform ' + ANIM_MS + 'ms ease';
+    calendarGrid.style.transform = 'translateX(' + exitTo + ')';
+    var done = false;
+    function proceed() {
+      if (done) return;
+      done = true;
+      calendarGrid.removeEventListener('transitionend', proceed);
+      applyMonthDelta(direction);
+      calendarGrid.style.transition = 'none';
+      calendarGrid.style.transform = 'translateX(' + enterFrom + ')';
+      void calendarGrid.offsetWidth; // force reflow so the jump registers before animating in
+      calendarGrid.style.transition = 'transform ' + ANIM_MS + 'ms ease';
+      calendarGrid.style.transform = 'translateX(0)';
+      setTimeout(function () { justSwiped = false; }, ANIM_MS + 40);
+    }
+    calendarGrid.addEventListener('transitionend', proceed);
+    setTimeout(proceed, ANIM_MS + 80); // fallback in case transitionend doesn't fire
+  }
+
+  document.getElementById('prevMonth').addEventListener('click', function () { animateMonthChange(-1); });
+  document.getElementById('nextMonth').addEventListener('click', function () { animateMonthChange(1); });
+
+  // ---- drag the grid with the finger to change month ----
+  var drag = { active: false, id: null, startX: 0, startY: 0, dx: 0, decided: false, horizontal: false };
+
+  calendarGrid.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    drag.active = true;
+    drag.id = e.pointerId;
+    drag.startX = e.clientX;
+    drag.startY = e.clientY;
+    drag.dx = 0;
+    drag.decided = false;
+    drag.horizontal = false;
+    calendarGrid.style.transition = 'none';
+    // Pointer capture is only taken once a horizontal drag is confirmed
+    // (in pointermove below) — capturing on every pointerdown would swallow
+    // the native click event a plain tap needs to open the day editor.
   });
-  document.getElementById('nextMonth').addEventListener('click', function () {
-    state.month += 1;
-    if (state.month === 13) { state.month = 1; state.year += 1; }
-    render();
+
+  calendarGrid.addEventListener('pointermove', function (e) {
+    if (!drag.active || e.pointerId !== drag.id) return;
+    var dx = e.clientX - drag.startX;
+    var dy = e.clientY - drag.startY;
+    if (!drag.decided) {
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+        drag.decided = true;
+        drag.horizontal = Math.abs(dx) > Math.abs(dy) * 1.2;
+        if (drag.horizontal) {
+          try { calendarGrid.setPointerCapture(e.pointerId); } catch (err) {}
+        }
+      }
+    }
+    if (drag.decided && drag.horizontal) {
+      drag.dx = dx;
+      calendarGrid.style.transform = 'translateX(' + dx + 'px)';
+    }
+  });
+
+  function endDrag(e) {
+    if (!drag.active || e.pointerId !== drag.id) return;
+    drag.active = false;
+    var dx = drag.dx;
+    var wasHorizontalDrag = drag.decided && drag.horizontal;
+    drag.dx = 0; drag.decided = false; drag.horizontal = false;
+    if (!wasHorizontalDrag) return; // a plain tap — let the click open the editor
+    if (Math.abs(dx) > SWIPE_THRESHOLD) {
+      animateMonthChange(dx > 0 ? -1 : 1);
+    } else {
+      justSwiped = true;
+      calendarGrid.style.transition = 'transform ' + ANIM_MS + 'ms ease';
+      calendarGrid.style.transform = 'translateX(0)';
+      setTimeout(function () { justSwiped = false; }, ANIM_MS + 40);
+    }
+  }
+  calendarGrid.addEventListener('pointerup', endDrag);
+  calendarGrid.addEventListener('pointercancel', function (e) {
+    if (!drag.active || e.pointerId !== drag.id) return;
+    drag.active = false;
+    drag.decided = false; drag.horizontal = false; drag.dx = 0;
+    calendarGrid.style.transition = 'transform ' + ANIM_MS + 'ms ease';
+    calendarGrid.style.transform = 'translateX(0)';
   });
 
   render();
