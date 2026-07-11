@@ -23,6 +23,8 @@
     --night: #4C7EF3;
     --offduty: #E2574B;
     --rest: #E2574B;
+    --vacation: #EC6FA6;
+    --misc: #A177E8;
     --today: #E8A23C;
   }
 
@@ -115,7 +117,7 @@
   }
   .day .num {
     font-family: 'SF Mono', Consolas, monospace; font-variant-numeric: tabular-nums;
-    font-size: clamp(.62rem, 3vw, .8rem); color: var(--text-dim); min-width: 0;
+    font-size: clamp(.52rem, 2.5vw, .68rem); color: var(--text-dim); min-width: 0;
   }
   .day.is-today { box-shadow: inset 0 0 0 1.5px var(--today); }
   .day.sat .num { color: var(--night); }
@@ -123,7 +125,7 @@
   .day.holiday .num { color: var(--rest); font-weight: 700; }
 
   .day .badge {
-    font-size: clamp(.6rem, 2.9vw, .78rem); font-weight: 700; color: var(--cell-color);
+    font-size: clamp(.56rem, 2.6vw, .7rem); font-weight: 700; color: var(--cell-color);
     display: flex; align-items: center; white-space: nowrap; min-width: 0;
   }
   .day .badge::before {
@@ -132,12 +134,16 @@
   }
 
   /* holiday name sits right under the date, with a solid color chip so it
-     reads clearly at a glance */
+     reads clearly at a glance. Long names (e.g. "부처님오신날") are shown as
+     a short form in JS (see HOLIDAY_SHORT) specifically so this can stay a
+     single line at a legible size — no wrapping. The clamp() still scales
+     it down a bit further on very narrow phones, and text-overflow:ellipsis
+     is only a dormant last-resort safety net, not the primary mechanism. */
   .holiday-label {
-    margin-top: 3px; align-self: flex-start; flex: none;
-    font-size: .62rem; font-weight: 700; line-height: 1.2; color: #fff;
-    background: var(--rest); border-radius: 4px; padding: 1px 5px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+    margin-top: 3px; align-self: flex-start; flex: none; max-width: 100%;
+    font-size: clamp(.52rem, 2.4vw, .64rem); font-weight: 700; line-height: 1.15; color: #fff;
+    background: var(--rest); border-radius: 4px; padding: 1px 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
   /* memo + team-of-the-day indicator are stacked in their own rows at the
@@ -304,9 +310,11 @@
 <script>
 (function () {
   var PATTERN = ['주간', '주간', '야간', '비번', '휴무', '야간', '비번', '휴무'];
-  var STATUS_TOKEN = { '주간': 'day', '야간': 'night', '비번': 'offduty', '휴무': 'rest' };
-  var STATUS_SHORT = { '주간': '주', '야간': '야', '비번': '비', '휴무': '휴' };
-  var STATUS_LIST = ['주간', '야간', '비번', '휴무'];
+  // 휴가/기타 are not part of the 8-day rotation — they only ever appear as a
+  // manual override on a specific date.
+  var STATUS_TOKEN = { '주간': 'day', '야간': 'night', '비번': 'offduty', '휴무': 'rest', '휴가': 'vacation', '기타': 'misc' };
+  var STATUS_SHORT = { '주간': '주', '야간': '야', '비번': '비', '휴무': '휴', '휴가': '가', '기타': '기' };
+  var STATUS_LIST = ['주간', '야간', '비번', '휴무', '휴가', '기타'];
   var TEAM_ORDER = ['A', 'B', 'C', 'D'];
   var TEAM_INDEX = { A: 0, B: 1, C: 2, D: 3 };
 
@@ -317,8 +325,8 @@
   var ANCHOR_DATE = '2026-07-02';
   var ANCHOR_TEAM = 'B';
 
-  // 2026년 대한민국 법정공휴일(대체공휴일 포함). 제헌절은 2026.5.11 시행된
-  // 개정 법률로 19년 만에 공휴일로 재지정되어 포함함. 다른 연도는 아직 데이터가 없음.
+  // 2026~2027년 대한민국 법정공휴일(대체공휴일 포함). 제헌절은 2026.5.11 시행된
+  // 개정 법률로 19년 만에 공휴일로 재지정되어 포함함. 그 밖의 연도는 아직 데이터가 없음.
   var HOLIDAYS = {
     '2026-01-01': '신정',
     '2026-02-16': '설날연휴',
@@ -339,7 +347,41 @@
     '2026-10-03': '개천절',
     '2026-10-05': '대체공휴일',
     '2026-10-09': '한글날',
-    '2026-12-25': '크리스마스'
+    '2026-12-25': '크리스마스',
+    '2027-01-01': '신정',
+    '2027-02-06': '설날연휴',
+    '2027-02-07': '설날',
+    '2027-02-08': '설날연휴',
+    '2027-02-09': '대체공휴일',
+    '2027-03-01': '삼일절',
+    '2027-05-05': '어린이날',
+    '2027-05-13': '부처님오신날',
+    '2027-06-06': '현충일',
+    '2027-07-17': '제헌절',
+    '2027-07-19': '대체공휴일',
+    '2027-08-15': '광복절',
+    '2027-08-16': '대체공휴일',
+    '2027-09-14': '추석연휴',
+    '2027-09-15': '추석',
+    '2027-09-16': '추석연휴',
+    '2027-10-03': '개천절',
+    '2027-10-04': '대체공휴일',
+    '2027-10-09': '한글날',
+    '2027-10-11': '대체공휴일',
+    '2027-12-25': '크리스마스',
+    '2027-12-27': '대체공휴일'
+  };
+
+  // The full names above are used everywhere there's room (the day-editor
+  // header, the title tooltip); this shortened form is only for the tiny
+  // in-cell chip, so a long name like "부처님오신날" can still sit on a
+  // single line without shrinking the font into illegibility.
+  var HOLIDAY_SHORT = {
+    '설날연휴': '설날',
+    '대체공휴일': '대체',
+    '부처님오신날': '석탄일',
+    '추석연휴': '추석',
+    '크리스마스': '성탄절'
   };
 
   var today = new Date();
@@ -519,10 +561,13 @@
         btn.appendChild(topRow);
 
         // Holiday name directly under the date, as its own solid-color chip.
+        // The cell shows a short form (so long names still fit on one line);
+        // the full name is always in the tooltip and the day-editor header.
         if (holidayName) {
           var holidayEl = document.createElement('span');
           holidayEl.className = 'holiday-label';
-          holidayEl.textContent = holidayName;
+          holidayEl.textContent = HOLIDAY_SHORT[holidayName] || holidayName;
+          holidayEl.title = holidayName;
           btn.appendChild(holidayEl);
         }
 
