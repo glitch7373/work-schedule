@@ -1,79 +1,75 @@
-<title>근무 캘린더 디자인 프로토타입</title>
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#14181D" />
+<title>근무 캘린더</title>
 <style>
+  * { box-sizing: border-box; }
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
   }
 
+  :root {
+    --bg: #14181D;
+    --panel: #1B2027;
+    --line: #2A313A;
+    --text: #D9DEE4;
+    --text-dim: #808A96;
+    --day: #E8A23C;
+    --night: #4C7EF3;
+    --offduty: #E2574B;
+    --rest: #E2574B;
+    --today: #E8A23C;
+  }
+
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100%;
+  }
+
   #page {
     font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
-    max-width: 960px;
+    max-width: 480px;
     margin: 0 auto;
-    padding: 36px 20px 100px;
-    color: #1b1b1b;
+    padding: calc(18px + env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom));
   }
-  :root[data-theme="dark"] #page { color: #e6e6e6; }
-  @media (prefers-color-scheme: dark) { #page { color: #e6e6e6; } }
-  :root[data-theme="light"] #page { color: #1b1b1b; }
 
-  .intro { margin-bottom: 26px; }
-  .intro h1 { font-size: 1.32rem; margin: 0 0 6px; letter-spacing: -0.01em; }
-  .intro p { margin: 0; color: #6b6b6b; font-size: .9rem; line-height: 1.55; max-width: 62ch; }
-  :root[data-theme="dark"] .intro p { color: #9a9a9a; }
-  @media (prefers-color-scheme: dark) { .intro p { color: #9a9a9a; } }
-  :root[data-theme="light"] .intro p { color: #6b6b6b; }
-
-  .switcher {
-    display: flex; gap: 8px; flex-wrap: wrap;
-    margin-bottom: 30px; padding-bottom: 18px;
-    border-bottom: 1px solid #dfdfdf;
-  }
-  :root[data-theme="dark"] .switcher { border-color: #333; }
-  @media (prefers-color-scheme: dark) { .switcher { border-color: #333; } }
-  :root[data-theme="light"] .switcher { border-color: #dfdfdf; }
-
-  .switcher button {
-    appearance: none; border: 1px solid #c9c9c9; background: #fff; color: #333;
-    padding: 9px 15px; border-radius: 999px; font-size: .84rem; cursor: pointer;
-    font-family: inherit; transition: background .15s ease, color .15s ease, border-color .15s ease;
-  }
-  :root[data-theme="dark"] .switcher button { background: #1e1e1e; color: #ddd; border-color: #3a3a3a; }
-  @media (prefers-color-scheme: dark) { .switcher button { background: #1e1e1e; color: #ddd; border-color: #3a3a3a; } }
-  :root[data-theme="light"] .switcher button { background: #fff; color: #333; border-color: #c9c9c9; }
-  .switcher button:hover { border-color: #8a8a8a; }
-  .switcher button[aria-pressed="true"] { background: #1b1b1b; color: #fff; border-color: #1b1b1b; }
-  :root[data-theme="dark"] .switcher button[aria-pressed="true"] { background: #eee; color: #111; border-color: #eee; }
-  @media (prefers-color-scheme: dark) { .switcher button[aria-pressed="true"] { background: #eee; color: #111; border-color: #eee; } }
-  .switcher button:focus-visible { outline: 2px solid #4C7EF3; outline-offset: 2px; }
-
-  /* ============ shared calendar scaffolding ============ */
-  #app { position: relative; }
-
-  .board-head {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
-  }
+  .board-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
   .board-head .nav-btn {
     appearance: none; border: none; background: transparent; cursor: pointer;
-    font-size: 1.1rem; width: 32px; height: 32px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
+    color: var(--text); font-size: 1.25rem; width: 44px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex: none;
   }
-  .board-head h2 { flex: 1; margin: 0; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .board-head .nav-btn:active { background: var(--panel); }
+  .board-head h2 {
+    flex: 1; margin: 0; font-size: 1.1rem; text-align: center;
+    font-family: 'SF Mono', Consolas, monospace; font-weight: 700; letter-spacing: .02em;
+    font-variant-numeric: tabular-nums;
+  }
   .board-head .settings-btn {
-    appearance: none; border: 1px solid currentColor; background: transparent;
-    border-radius: 999px; padding: 6px 14px; font-size: .78rem; cursor: pointer; font-family: inherit;
-    opacity: .75;
+    appearance: none; border: 1px solid var(--line); background: transparent; color: var(--text);
+    border-radius: 999px; padding: 8px 12px; font-size: .76rem; cursor: pointer; font-family: inherit;
+    flex: none; min-height: 36px;
   }
-  .board-head .settings-btn:hover { opacity: 1; }
+  .board-head .settings-btn:active { background: var(--panel); }
 
-  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; font-size: .78rem; }
-  .legend .chip { display: flex; align-items: center; gap: 6px; }
-  .legend .swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; flex: none; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; font-size: .74rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .04em; }
+  .legend .chip { display: flex; align-items: center; gap: 5px; }
+  .legend .swatch { width: 8px; height: 8px; border-radius: 2px; display: inline-block; flex: none; }
 
   .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
-  .weekdays span { text-align: center; font-size: .74rem; padding: 6px 0; opacity: .6; }
-  .weekdays span:first-child { color: #d1554a; opacity: .85; }
-  .weekdays span:last-child { color: #3d6fd1; opacity: .85; }
+  .weekdays span {
+    text-align: center; padding: 4px 0 8px; font-size: .72rem;
+    font-family: 'SF Mono', Consolas, monospace; color: var(--text-dim);
+  }
+  .weekdays span:first-child { color: #E06B5C; }
+  .weekdays span:last-child { color: #6B9CF7; }
 
-  .grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; border: 1px solid var(--line); background: var(--line); }
 
   .day {
     all: unset;
@@ -83,376 +79,158 @@
     flex-direction: column;
     position: relative;
     font-family: inherit;
+    aspect-ratio: 1 / 0.92;
+    background: var(--panel);
+    padding: 6px 7px;
+    min-width: 0;
   }
-  .day.outside { pointer-events: none; opacity: .32; }
-  .day:focus-visible { outline: 2px solid #4C7EF3; outline-offset: -2px; z-index: 2; }
+  .day.outside { pointer-events: none; opacity: .3; background: var(--bg); }
+  .day:active:not(.outside) { background: #212832; }
+  .day:focus-visible { outline: 2px solid var(--night); outline-offset: -2px; z-index: 2; }
 
-  .day .num { font-variant-numeric: tabular-nums; }
-  .day .memo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 24px; }
+  .day .num {
+    font-family: 'SF Mono', Consolas, monospace; font-variant-numeric: tabular-nums;
+    font-size: .8rem; color: var(--text-dim); align-self: flex-end;
+  }
+  .day.is-today { box-shadow: inset 0 0 0 1.5px var(--today); }
+  .day.is-today .num { color: var(--today); }
 
-  /* compact day-team/night-team indicator, e.g. "A/D" — tucked in the corner
+  .day .badge {
+    position: absolute; top: 6px; left: 7px;
+    font-size: .74rem; font-weight: 700; color: var(--cell-color);
+  }
+  .day .badge::before {
+    content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--cell-color); box-shadow: 0 0 6px 1px var(--cell-color); margin-right: 4px;
+  }
+
+  .day .memo {
+    margin-top: auto; font-size: .62rem; color: var(--text-dim);
+    border-top: 1px solid var(--line); padding-top: 3px; padding-right: 26px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* compact day-team/night-team indicator, e.g. "A>D" — tucked in the corner
      so it never competes with the memo line for space */
   .teaminfo {
     position: absolute; right: 6px; bottom: 4px;
     display: flex; flex-direction: row; align-items: baseline; gap: 1px;
     white-space: nowrap;
-    font-size: .62rem; line-height: 1; opacity: .55;
+    font-family: 'SF Mono', Consolas, monospace;
+    font-size: .6rem; line-height: 1; opacity: .55; color: var(--text-dim);
     font-variant-numeric: tabular-nums;
   }
   .teaminfo .me { opacity: 1; font-weight: 700; color: var(--cell-color); }
 
-  /* ============ editor drawer (shared skeleton) ============ */
+  /* ============ scrim ============ */
   .scrim {
-    position: fixed; inset: 0; background: rgba(0,0,0,.35);
+    position: fixed; inset: 0; background: rgba(0,0,0,.5);
     opacity: 0; pointer-events: none; transition: opacity .18s ease; z-index: 40;
   }
   .scrim.open { opacity: 1; pointer-events: auto; }
 
+  /* ============ editor bottom sheet ============ */
   .editor {
-    position: fixed; top: 0; right: 0; height: 100%; width: min(360px, 92vw);
-    background: #fff; box-shadow: -12px 0 30px rgba(0,0,0,.18);
-    transform: translateX(100%); transition: transform .22s ease;
-    z-index: 41; padding: 24px 22px; overflow-y: auto;
+    position: fixed; left: 0; right: 0; bottom: 0; width: 100%;
+    max-height: 82vh; overflow-y: auto;
+    background: var(--panel); color: var(--text);
+    box-shadow: 0 -14px 32px rgba(0,0,0,.5);
+    border-radius: 20px 20px 0 0;
+    transform: translateY(100%); transition: transform .24s ease;
+    z-index: 41; padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
     font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
   }
-  .editor.open { transform: translateX(0); }
-  :root[data-theme="dark"] .editor { background: #1c1c1c; color: #eee; }
-  @media (prefers-color-scheme: dark) { .editor { background: #1c1c1c; color: #eee; } }
-  :root[data-theme="light"] .editor { background: #fff; color: #1b1b1b; }
+  .editor.open { transform: translateY(0); }
 
-  .editor-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-  .editor-head h3 { margin: 0; font-size: 1.05rem; }
-  .editor-close { appearance: none; border: none; background: transparent; font-size: 1.2rem; cursor: pointer; opacity: .6; }
-  .editor-close:hover { opacity: 1; }
+  .sheet-handle { width: 36px; height: 4px; border-radius: 999px; background: var(--line); margin: 0 auto 14px; }
 
-  .field-label { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; opacity: .55; margin: 18px 0 8px; }
+  .editor-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .editor-head h3 { margin: 0; font-size: 1.05rem; font-family: 'SF Mono', Consolas, monospace; }
+  .editor-close {
+    appearance: none; border: none; background: transparent; color: var(--text);
+    font-size: 1.2rem; cursor: pointer; opacity: .6; width: 32px; height: 32px;
+  }
+
+  .field-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; opacity: .55; margin: 16px 0 8px; }
   .field-label:first-of-type { margin-top: 0; }
 
   .status-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .status-picker button {
-    appearance: none; cursor: pointer; font-family: inherit; font-size: .86rem;
-    border-radius: 10px; padding: 10px 8px; display: flex; align-items: center; gap: 8px;
-    border: 1.5px solid #d8d8d8; background: transparent; color: inherit;
+    appearance: none; cursor: pointer; font-family: inherit; font-size: .88rem;
+    border-radius: 10px; padding: 12px 10px; display: flex; align-items: center; gap: 8px;
+    border: 1.5px solid var(--line); background: transparent; color: var(--text); min-height: 44px;
   }
-  :root[data-theme="dark"] .status-picker button { border-color: #3d3d3d; }
-  @media (prefers-color-scheme: dark) { .status-picker button { border-color: #3d3d3d; } }
   .status-picker button .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-  .status-picker button[aria-pressed="true"] { border-color: var(--cell-color); background: color-mix(in srgb, var(--cell-color) 14%, transparent); font-weight: 600; }
+  .status-picker button[aria-pressed="true"] {
+    border-color: var(--cell-color); background: color-mix(in srgb, var(--cell-color) 16%, transparent); font-weight: 700;
+  }
 
   .memo-input {
-    width: 100%; min-height: 88px; resize: vertical; font-family: inherit; font-size: .88rem;
-    border-radius: 10px; border: 1.5px solid #d8d8d8; padding: 10px 12px; background: transparent; color: inherit;
-    line-height: 1.5;
+    width: 100%; min-height: 88px; resize: vertical; font-family: inherit; font-size: .92rem;
+    border-radius: 10px; border: 1.5px solid var(--line); padding: 10px 12px;
+    background: var(--bg); color: var(--text); line-height: 1.5;
   }
-  :root[data-theme="dark"] .memo-input { border-color: #3d3d3d; }
-  @media (prefers-color-scheme: dark) { .memo-input { border-color: #3d3d3d; } }
-  .memo-input:focus-visible, .memo-input:focus { outline: 2px solid #4C7EF3; outline-offset: 1px; }
+  .memo-input:focus-visible, .memo-input:focus { outline: 2px solid var(--night); outline-offset: 1px; }
 
   .editor-done {
-    margin-top: 22px; width: 100%; appearance: none; border: none; cursor: pointer;
-    background: #1b1b1b; color: #fff; font-family: inherit; font-size: .92rem;
-    padding: 12px; border-radius: 10px;
+    margin-top: 20px; width: 100%; appearance: none; border: none; cursor: pointer;
+    background: var(--day); color: #1a1206; font-family: inherit; font-size: .95rem; font-weight: 700;
+    padding: 13px; border-radius: 10px; min-height: 48px;
   }
-  :root[data-theme="dark"] .editor-done { background: #eee; color: #111; }
-  @media (prefers-color-scheme: dark) { .editor-done { background: #eee; color: #111; } }
 
-  /* ============ settings modal (shared skeleton) ============ */
+  /* ============ settings modal ============ */
   .modal-scrim {
-    position: fixed; inset: 0; background: rgba(0,0,0,.4);
-    display: none; align-items: center; justify-content: center; z-index: 50;
+    position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    display: none; align-items: center; justify-content: center; z-index: 50; padding: 20px;
   }
   .modal-scrim.open { display: flex; }
   .modal {
-    background: #fff; border-radius: 14px; padding: 24px; width: min(340px, 90vw);
+    background: var(--panel); color: var(--text); border-radius: 16px; padding: 22px; width: min(340px, 100%);
     font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
   }
-  :root[data-theme="dark"] .modal { background: #1c1c1c; color: #eee; }
-  @media (prefers-color-scheme: dark) { .modal { background: #1c1c1c; color: #eee; } }
   .modal h3 { margin: 0 0 6px; font-size: 1.02rem; }
-  .modal p { margin: 0 0 16px; font-size: .82rem; opacity: .65; line-height: 1.5; }
+  .modal p { margin: 0 0 16px; font-size: .8rem; opacity: .65; line-height: 1.5; }
   .modal input[type="date"] {
-    width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid #d8d8d8;
-    font-family: inherit; font-size: .9rem; background: transparent; color: inherit; margin-bottom: 18px;
+    width: 100%; padding: 11px 12px; border-radius: 8px; border: 1.5px solid var(--line);
+    font-family: inherit; font-size: .9rem; background: var(--bg); color: var(--text); margin-bottom: 16px; min-height: 44px;
   }
-  :root[data-theme="dark"] .modal input[type="date"] { border-color: #3d3d3d; }
-  @media (prefers-color-scheme: dark) { .modal input[type="date"] { border-color: #3d3d3d; } }
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
   .modal-actions button {
-    appearance: none; cursor: pointer; font-family: inherit; font-size: .85rem;
-    padding: 9px 16px; border-radius: 8px; border: 1px solid #d8d8d8; background: transparent; color: inherit;
+    appearance: none; cursor: pointer; font-family: inherit; font-size: .86rem;
+    padding: 10px 16px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--text);
+    min-height: 42px;
   }
-  .modal-actions button.primary { background: #1b1b1b; color: #fff; border-color: #1b1b1b; }
-  :root[data-theme="dark"] .modal-actions button.primary { background: #eee; color: #111; border-color: #eee; }
-  @media (prefers-color-scheme: dark) { .modal-actions button.primary { background: #eee; color: #111; border-color: #eee; } }
+  .modal-actions button.primary { background: var(--day); color: #1a1206; border-color: var(--day); font-weight: 700; }
 
   .team-picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 4px; }
   .team-picker button {
-    appearance: none; cursor: pointer; font-family: inherit; font-size: .92rem; font-weight: 700;
-    border-radius: 10px; padding: 10px 0; border: 1.5px solid #d8d8d8; background: transparent; color: inherit;
+    appearance: none; cursor: pointer; font-family: inherit; font-size: .95rem; font-weight: 700;
+    border-radius: 10px; padding: 12px 0; border: 1.5px solid var(--line); background: transparent; color: var(--text);
+    min-height: 44px;
   }
-  :root[data-theme="dark"] .team-picker button { border-color: #3d3d3d; }
-  @media (prefers-color-scheme: dark) { .team-picker button { border-color: #3d3d3d; } }
-  .team-picker button[aria-pressed="true"] { border-color: currentColor; background: color-mix(in srgb, currentColor 12%, transparent); }
+  .team-picker button[aria-pressed="true"] { border-color: var(--day); background: color-mix(in srgb, var(--day) 16%, transparent); color: var(--day); }
   .hint { font-size: .74rem !important; opacity: .55; margin: 8px 0 18px !important; }
-
-  /* team-of-the-day indicator shown on every date cell */
-  .teaminfo { display: flex; flex-direction: column; gap: 1px; }
-  .teaminfo .tag { display: flex; gap: 3px; align-items: baseline; }
-  .teaminfo .tag .lbl { opacity: .6; }
-  .teaminfo .tag.me .lbl, .teaminfo .tag.me .val { font-weight: 700; opacity: 1; }
-
-  /* ================================================================
-     SKIN A — 종이 다이어리 (Paper Diary)
-     obangsaek-inspired ink palette on hanji-toned paper
-     ================================================================ */
-  :root[data-skin="paper"] {
-    --paper: #E7E1D2; --ink: #2B2E33; --ink-soft: #6b6558;
-    --day: #C08A2E; --night: #33415C; --offduty: #8C97A6; --rest: #4F6E52; --today: #B23B2E;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root[data-skin="paper"] { --paper:#211D18; --ink:#EAE2D2; --ink-soft:#a89e89; --day:#D8A94B; --night:#7C93C4; --offduty:#9AA3AE; --rest:#7FB489; --today:#E2604A; }
-  }
-  :root[data-theme="dark"][data-skin="paper"] { --paper:#211D18; --ink:#EAE2D2; --ink-soft:#a89e89; --day:#D8A94B; --night:#7C93C4; --offduty:#9AA3AE; --rest:#7FB489; --today:#E2604A; }
-  :root[data-theme="light"][data-skin="paper"] { --paper:#E7E1D2; --ink:#2B2E33; --ink-soft:#6b6558; --day:#C08A2E; --night:#33415C; --offduty:#8C97A6; --rest:#4F6E52; --today:#B23B2E; }
-
-  #app[data-skin="paper"] {
-    font-family: 'Noto Serif KR', 'Nanum Myeongjo', Georgia, serif;
-    background: var(--paper);
-    padding: 30px 26px 8px;
-    border-radius: 3px;
-    box-shadow: 0 1px 1px rgba(0,0,0,.04), 0 14px 34px -18px rgba(43,46,51,.45), 0 0 0 1px rgba(43,46,51,.06);
-    color: var(--ink);
-  }
-
-  #app[data-skin="paper"] .board-head h2 { font-weight: 600; letter-spacing: .01em; }
-  #app[data-skin="paper"] .board-head .nav-btn, #app[data-skin="paper"] .board-head .settings-btn { color: var(--ink); }
-  #app[data-skin="paper"] .legend { font-family: -apple-system, 'Noto Sans KR', sans-serif; color: var(--ink-soft); }
-  #app[data-skin="paper"] .legend .swatch { border-radius: 50%; }
-  #app[data-skin="paper"] .weekdays span { font-family: -apple-system, 'Noto Sans KR', sans-serif; color: var(--ink-soft); opacity: 1; }
-  #app[data-skin="paper"] .weekdays span:first-child { color: var(--today); opacity: .8; }
-  #app[data-skin="paper"] .weekdays span:last-child { color: var(--night); opacity: .8; }
-
-  #app[data-skin="paper"] .grid { border-top: 1px solid rgba(43,46,51,.18); }
-  #app[data-skin="paper"] .day {
-    aspect-ratio: 1 / 0.92;
-    padding: 8px 9px 7px;
-    border-right: 1px solid rgba(43,46,51,.1);
-    border-bottom: 1px solid rgba(43,46,51,.18);
-  }
-  #app[data-skin="paper"] .day:nth-child(7n) { border-right: none; }
-  #app[data-skin="paper"] .day .num { font-size: .92rem; }
-  #app[data-skin="paper"] .day.is-today .num {
-    color: var(--today); font-weight: 700;
-  }
-  #app[data-skin="paper"] .day .badge {
-    position: absolute; top: 6px; right: 7px;
-    width: 22px; height: 22px; border-radius: 50%;
-    border: 1.4px solid var(--cell-color); color: var(--cell-color);
-    display: flex; align-items: center; justify-content: center;
-    font-size: .62rem; font-family: -apple-system, 'Noto Sans KR', sans-serif; font-weight: 700;
-    transform: rotate(-8deg);
-  }
-  #app[data-skin="paper"] .teaminfo { font-family: -apple-system, 'Noto Sans KR', sans-serif; color: var(--ink-soft); }
-  #app[data-skin="paper"] .day .memo {
-    margin-top: auto; font-family: -apple-system, 'Noto Sans KR', sans-serif;
-    font-size: .68rem; color: var(--ink-soft);
-    border-bottom: 1px solid var(--ink-soft);
-    padding-bottom: 1px;
-  }
-  #app[data-skin="paper"] .day .memo::before { content: '· '; }
-  #app[data-skin="paper"] .day:hover:not(.outside) { background: rgba(43,46,51,.05); }
-
-  /* ================================================================
-     SKIN B — 근무 상황판 (Duty Board) — committed dark control-room look
-     ================================================================ */
-  :root[data-skin="board"] {
-    --bg: #14181D; --panel: #1B2027; --line: #2A313A; --text: #D9DEE4; --text-dim: #808A96;
-    --day: #E8A23C; --night: #4C7EF3; --offduty: #7C8794; --rest: #45B87B; --today: #E8A23C;
-  }
-  #app[data-skin="board"] {
-    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
-    background: var(--bg); color: var(--text);
-    padding: 24px 22px 10px; border-radius: 10px;
-    box-shadow: 0 0 0 1px var(--line), 0 20px 40px -20px rgba(0,0,0,.6);
-  }
-  #app[data-skin="board"] .board-head h2 { font-weight: 700; letter-spacing: .02em; font-family: 'SF Mono', Consolas, monospace; }
-  #app[data-skin="board"] .board-head .nav-btn, #app[data-skin="board"] .board-head .settings-btn { color: var(--text); }
-  #app[data-skin="board"] .board-head .settings-btn { border-color: var(--line); }
-  #app[data-skin="board"] .legend { color: var(--text-dim); text-transform: uppercase; letter-spacing: .04em; font-size: .7rem; }
-  #app[data-skin="board"] .legend .swatch { border-radius: 2px; box-shadow: 0 0 6px 0 var(--cell-color, transparent); }
-  #app[data-skin="board"] .weekdays span { color: var(--text-dim); font-family: 'SF Mono', Consolas, monospace; opacity: 1; }
-  #app[data-skin="board"] .weekdays span:first-child { color: #E06B5C; opacity: 1; }
-  #app[data-skin="board"] .weekdays span:last-child { color: #6B9CF7; opacity: 1; }
-
-  #app[data-skin="board"] .grid { gap: 3px; border: 1px solid var(--line); background: var(--line); }
-  #app[data-skin="board"] .day {
-    aspect-ratio: 1 / 0.88; background: var(--panel); padding: 7px 8px;
-  }
-  #app[data-skin="board"] .day.outside { background: var(--bg); }
-  #app[data-skin="board"] .day .num { font-family: 'SF Mono', Consolas, monospace; font-size: .82rem; color: var(--text-dim); align-self: flex-end; }
-  #app[data-skin="board"] .day.is-today { box-shadow: inset 0 0 0 1.5px var(--today); }
-  #app[data-skin="board"] .day.is-today .num { color: var(--today); }
-  #app[data-skin="board"] .day .badge {
-    position: absolute; top: 7px; left: 8px;
-    font-size: .68rem; font-weight: 700; color: var(--cell-color);
-  }
-  #app[data-skin="board"] .day .badge::before {
-    content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
-    background: var(--cell-color); box-shadow: 0 0 6px 1px var(--cell-color); margin-right: 4px;
-  }
-  #app[data-skin="board"] .teaminfo { font-family: 'SF Mono', Consolas, monospace; color: var(--text-dim); }
-  #app[data-skin="board"] .day .memo {
-    margin-top: auto; font-size: .64rem; color: var(--text-dim);
-    border-top: 1px solid var(--line); padding-top: 3px;
-  }
-  #app[data-skin="board"] .day:hover:not(.outside) { background: #212832; }
-
-  :root[data-skin="board"] .editor, :root[data-skin="board"] .modal { background: var(--panel); color: var(--text); }
-  :root[data-skin="board"] .status-picker button, :root[data-skin="board"] .memo-input,
-  :root[data-skin="board"] .modal input[type="date"] { border-color: var(--line); }
-  :root[data-skin="board"] .editor-done { background: var(--day); color: #1a1206; }
-  :root[data-skin="board"] .modal-actions button.primary { background: var(--day); color: #1a1206; border-color: var(--day); }
-
-  /* ================================================================
-     SKIN C — 포근한 카드 (Soft Card)
-     ================================================================ */
-  :root[data-skin="soft"] {
-    --bg: #F6F4FB; --card: #FFFFFF; --text: #34324A; --text-dim: #8D8BA3;
-    --day: #F4A65E; --night: #8F93EE; --offduty: #63C7B9; --rest: #F2A9BE; --today: #6C6FE0;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root[data-skin="soft"] { --bg:#1B1B2C; --card:#262639; --text:#E7E6F5; --text-dim:#9694B5; --day:#FFC98A; --night:#A6AAF2; --offduty:#8FE0D4; --rest:#F7B9C9; --today:#A6AAF2; }
-  }
-  :root[data-theme="dark"][data-skin="soft"] { --bg:#1B1B2C; --card:#262639; --text:#E7E6F5; --text-dim:#9694B5; --day:#FFC98A; --night:#A6AAF2; --offduty:#8FE0D4; --rest:#F7B9C9; --today:#A6AAF2; }
-  :root[data-theme="light"][data-skin="soft"] { --bg:#F6F4FB; --card:#FFFFFF; --text:#34324A; --text-dim:#8D8BA3; --day:#F4A65E; --night:#8F93EE; --offduty:#63C7B9; --rest:#F2A9BE; --today:#6C6FE0; }
-
-  #app[data-skin="soft"] {
-    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
-    background: var(--bg); color: var(--text);
-    padding: 26px 24px 14px; border-radius: 24px;
-    box-shadow: 0 24px 50px -30px rgba(52,50,74,.35);
-  }
-  :root[data-skin="soft"] .editor { border-radius: 20px 0 0 20px; }
-  :root[data-skin="soft"] .modal { border-radius: 20px; }
-  :root[data-skin="soft"] .editor-done { background: var(--today); }
-  :root[data-skin="soft"] .modal-actions button.primary { background: var(--today); border-color: var(--today); }
-
-  #app[data-skin="soft"] .board-head h2 { font-weight: 700; }
-  #app[data-skin="soft"] .board-head .nav-btn { background: var(--card); border-radius: 50%; color: var(--text); }
-  #app[data-skin="soft"] .board-head .settings-btn { color: var(--text); border-color: #d8d5ea; border-radius: 999px; }
-  #app[data-skin="soft"] .legend { color: var(--text-dim); }
-  #app[data-skin="soft"] .legend .swatch { border-radius: 50%; }
-  #app[data-skin="soft"] .weekdays span { color: var(--text-dim); opacity: 1; font-weight: 600; }
-  #app[data-skin="soft"] .weekdays span:first-child { color: #E6789B; opacity: 1; }
-  #app[data-skin="soft"] .weekdays span:last-child { color: #7E82E8; opacity: 1; }
-
-  #app[data-skin="soft"] .grid { gap: 6px; }
-  #app[data-skin="soft"] .day {
-    aspect-ratio: 1 / 0.98; border-radius: 16px; padding: 9px 10px;
-    background: color-mix(in srgb, var(--cell-color) 22%, var(--card));
-  }
-  #app[data-skin="soft"] .day.outside { background: transparent; }
-  #app[data-skin="soft"] .day .num { font-weight: 700; font-size: .88rem; }
-  #app[data-skin="soft"] .day.is-today { box-shadow: 0 0 0 2px var(--today); }
-  #app[data-skin="soft"] .day .badge {
-    margin-top: 4px; align-self: flex-start;
-    background: var(--cell-color); color: #fff; font-size: .6rem; font-weight: 700;
-    padding: 2px 7px; border-radius: 999px;
-  }
-  #app[data-skin="soft"] .teaminfo { color: var(--text-dim); }
-  #app[data-skin="soft"] .day .memo {
-    margin-top: auto; font-size: .62rem; color: var(--text);
-    background: color-mix(in srgb, var(--card) 75%, transparent);
-    border-radius: 999px; padding: 2px 8px; display: flex; align-items: center; gap: 4px;
-  }
-  #app[data-skin="soft"] .day .memo::before {
-    content: ''; width: 4px; height: 4px; border-radius: 50%; background: currentColor; flex: none; opacity: .6;
-  }
-  #app[data-skin="soft"] .day:hover:not(.outside) { filter: brightness(1.04); }
-
-  /* ================================================================
-     SKIN D — 대장부 그리드 (Ledger Grid)
-     ================================================================ */
-  :root[data-skin="ledger"] {
-    --bg: #FFFFFF; --line: #DCDFE3; --text: #1B1F24; --text-dim: #767C85;
-    --day: #B5661F; --night: #2B4C8C; --offduty: #6B6F76; --rest: #2F7D52; --today: #B5661F;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root[data-skin="ledger"] { --bg:#14161A; --line:#2B2F36; --text:#E3E6EA; --text-dim:#7C838C; --day:#E0954A; --night:#6E93D8; --offduty:#9AA0A8; --rest:#55B37E; --today:#E0954A; }
-  }
-  :root[data-theme="dark"][data-skin="ledger"] { --bg:#14161A; --line:#2B2F36; --text:#E3E6EA; --text-dim:#7C838C; --day:#E0954A; --night:#6E93D8; --offduty:#9AA0A8; --rest:#55B37E; --today:#E0954A; }
-  :root[data-theme="light"][data-skin="ledger"] { --bg:#FFFFFF; --line:#DCDFE3; --text:#1B1F24; --text-dim:#767C85; --day:#B5661F; --night:#2B4C8C; --offduty:#6B6F76; --rest:#2F7D52; --today:#B5661F; }
-
-  #app[data-skin="ledger"] {
-    font-family: 'SF Mono', Consolas, 'D2Coding', -apple-system, 'Noto Sans KR', monospace, sans-serif;
-    background: var(--bg); color: var(--text);
-    padding: 20px 20px 6px; border: 1px solid var(--line);
-  }
-  :root[data-skin="ledger"] .editor-done, :root[data-skin="ledger"] .modal-actions button.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
-
-  #app[data-skin="ledger"] .board-head h2 { font-weight: 700; font-size: 1rem; letter-spacing: 0; }
-  #app[data-skin="ledger"] .board-head .nav-btn, #app[data-skin="ledger"] .board-head .settings-btn { color: var(--text); border-radius: 2px; }
-  #app[data-skin="ledger"] .legend { font-family: -apple-system, 'Noto Sans KR', sans-serif; color: var(--text-dim); font-size: .72rem; }
-  #app[data-skin="ledger"] .legend .swatch { border-radius: 1px; }
-  #app[data-skin="ledger"] .weekdays span {
-    font-family: -apple-system, 'Noto Sans KR', sans-serif; color: var(--text-dim); opacity: 1;
-    font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--line); padding-bottom: 5px;
-  }
-  #app[data-skin="ledger"] .weekdays span:first-child { color: #C1503F; opacity: 1; }
-  #app[data-skin="ledger"] .weekdays span:last-child { color: #3D63A8; opacity: 1; }
-
-  #app[data-skin="ledger"] .grid { border-left: 1px solid var(--line); border-top: 1px solid var(--line); }
-  #app[data-skin="ledger"] .day {
-    aspect-ratio: 1 / 0.78; padding: 5px 7px 4px;
-    border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
-    border-left: 3px solid var(--cell-color);
-  }
-  #app[data-skin="ledger"] .day.outside { border-left-color: var(--line); }
-  #app[data-skin="ledger"] .day .num { font-size: .78rem; color: var(--text-dim); }
-  #app[data-skin="ledger"] .day.is-today .num { color: var(--today); font-weight: 700; }
-  #app[data-skin="ledger"] .day .badge {
-    position: absolute; top: 5px; right: 6px;
-    font-size: .64rem; font-weight: 700; color: var(--cell-color);
-    font-family: -apple-system, 'Noto Sans KR', sans-serif;
-  }
-  #app[data-skin="ledger"] .teaminfo { font-family: -apple-system, 'Noto Sans KR', sans-serif; color: var(--text-dim); }
-  #app[data-skin="ledger"] .day .memo {
-    margin-top: auto; font-size: .62rem; color: var(--text);
-    font-family: -apple-system, 'Noto Sans KR', sans-serif; opacity: .8;
-  }
-  #app[data-skin="ledger"] .day:hover:not(.outside) { background: color-mix(in srgb, var(--cell-color) 6%, transparent); }
 </style>
+</head>
+<body>
 
 <div id="page">
-  <div class="intro">
-    <h1>근무 캘린더 — 디자인 프로토타입 4종</h1>
-    <p>주-주-야-비-휴-야-비-휴 8일 주기를 따르는 A·B·C·D 4개 조가 2일씩 어긋나게 돌아가는 4조-2교대 구조입니다. 매일 정확히 한 조가 주간, 한 조가 야간을 맡습니다. 설정에서 내 조와 기준일을 정하면 날짜별로 내 근무 상태와 그날의 주간조·야간조가 함께 표시됩니다. 위 탭으로 스타일을 비교하고, 날짜를 클릭해 상태·메모를 바꿔보세요.</p>
+  <div class="board-head">
+    <button type="button" class="nav-btn" id="prevMonth" aria-label="이전 달">‹</button>
+    <h2 id="monthLabel">2026년 7월</h2>
+    <button type="button" class="nav-btn" id="nextMonth" aria-label="다음 달">›</button>
+    <button type="button" class="settings-btn" id="settingsBtn">내 조: A · 설정</button>
   </div>
-
-  <div class="switcher" role="tablist" aria-label="디자인 선택">
-    <button type="button" data-skin-btn="paper" aria-pressed="false">📓 종이 다이어리</button>
-    <button type="button" data-skin-btn="board" aria-pressed="true">🖥 근무 상황판</button>
-    <button type="button" data-skin-btn="soft" aria-pressed="false">🌿 포근한 카드</button>
-    <button type="button" data-skin-btn="ledger" aria-pressed="false">📋 대장부 그리드</button>
+  <div class="legend" id="legend"></div>
+  <div class="weekdays">
+    <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
   </div>
-
-  <div id="app" data-skin="board">
-    <div class="board-head">
-      <button type="button" class="nav-btn" id="prevMonth" aria-label="이전 달">‹</button>
-      <h2 id="monthLabel">2026년 7월</h2>
-      <button type="button" class="nav-btn" id="nextMonth" aria-label="다음 달">›</button>
-      <button type="button" class="settings-btn" id="settingsBtn">내 조 설정</button>
-    </div>
-    <div class="legend" id="legend"></div>
-    <div class="weekdays">
-      <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
-    </div>
-    <div class="grid" id="calendarGrid"></div>
-  </div>
+  <div class="grid" id="calendarGrid"></div>
 </div>
 
 <div class="scrim" id="scrim"></div>
 <div class="editor" id="editor">
+  <div class="sheet-handle"></div>
   <div class="editor-head">
     <h3 id="editorDate">7월 5일 (일)</h3>
     <button type="button" class="editor-close" id="editorClose" aria-label="닫기">✕</button>
@@ -484,6 +262,7 @@
 (function () {
   var PATTERN = ['주간', '주간', '야간', '비번', '휴무', '야간', '비번', '휴무'];
   var STATUS_TOKEN = { '주간': 'day', '야간': 'night', '비번': 'offduty', '휴무': 'rest' };
+  var STATUS_SHORT = { '주간': '주', '야간': '야', '비번': '비', '휴무': '휴' };
   var STATUS_LIST = ['주간', '야간', '비번', '휴무'];
   var TEAM_ORDER = ['A', 'B', 'C', 'D'];
   var TEAM_INDEX = { A: 0, B: 1, C: 2, D: 3 };
@@ -508,16 +287,14 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         patternStart: state.patternStart,
         myTeam: state.myTeam,
-        overrides: state.overrides,
-        skin: document.getElementById('app').dataset.skin
+        overrides: state.overrides
       }));
     } catch (e) { /* storage unavailable (private mode, etc.) — app still works, just won't persist */ }
   }
   function loadState() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      return JSON.parse(raw);
+      return raw ? JSON.parse(raw) : null;
     } catch (e) { return null; }
   }
   var saved = loadState();
@@ -649,10 +426,10 @@
 
         var badge = document.createElement('span');
         badge.className = 'badge';
-        badge.textContent = status;
+        badge.textContent = STATUS_SHORT[status];
         btn.appendChild(badge);
 
-        // Compact day-team/night-team indicator, e.g. "A/D" (day team "/" night team).
+        // Compact day-team/night-team indicator, e.g. "A>D" (day team, night team).
         var dn = getDayNightTeams(dateStr);
         var teaminfo = document.createElement('span');
         teaminfo.className = 'teaminfo';
@@ -664,7 +441,7 @@
         nightSpan.className = dn['야간'] === state.myTeam ? 'me' : '';
         nightSpan.textContent = dn['야간'];
         var sep = document.createElement('span');
-        sep.textContent = '/';
+        sep.textContent = '>';
         teaminfo.appendChild(daySpan);
         teaminfo.appendChild(sep);
         teaminfo.appendChild(nightSpan);
@@ -697,7 +474,7 @@
     renderGrid();
   }
 
-  // ---- editor drawer ----
+  // ---- editor bottom sheet ----
   var editor = document.getElementById('editor');
   var scrim = document.getElementById('scrim');
   var statusPicker = document.getElementById('statusPicker');
@@ -740,6 +517,10 @@
     memoInput.value = getMemo(state.activeDate);
   }
 
+  function lockScroll(lock) {
+    document.body.style.overflow = lock ? 'hidden' : '';
+  }
+
   function openEditor(dateStr) {
     state.activeDate = dateStr;
     var dt = parseDate(dateStr);
@@ -747,11 +528,13 @@
     updateEditorFields();
     editor.classList.add('open');
     scrim.classList.add('open');
+    lockScroll(true);
   }
   function closeEditor() {
     editor.classList.remove('open');
     scrim.classList.remove('open');
     state.activeDate = null;
+    lockScroll(false);
   }
   document.getElementById('editorClose').addEventListener('click', closeEditor);
   document.getElementById('editorDone').addEventListener('click', closeEditor);
@@ -796,9 +579,11 @@
     });
     updatePatternHint();
     settingsScrim.classList.add('open');
+    lockScroll(true);
   });
   document.getElementById('settingsCancel').addEventListener('click', function () {
     settingsScrim.classList.remove('open');
+    lockScroll(false);
   });
   document.getElementById('settingsSave').addEventListener('click', function () {
     state.myTeam = draftTeam;
@@ -809,6 +594,7 @@
     renderHeader();
     renderGrid();
     settingsScrim.classList.remove('open');
+    lockScroll(false);
   });
 
   // ---- month nav ----
@@ -823,29 +609,8 @@
     render();
   });
 
-  // ---- skin switcher ----
-  // Color tokens (--day/--night/--offduty/--rest, etc.) live on :root so that
-  // the editor drawer and settings modal — which render outside #app — can
-  // also read them; #app just carries the same attribute for layout rules.
-  var appEl = document.getElementById('app');
-  function setSkin(skin) {
-    appEl.dataset.skin = skin;
-    document.documentElement.dataset.skin = skin;
-  }
-  Array.prototype.forEach.call(document.querySelectorAll('[data-skin-btn]'), function (btn) {
-    btn.addEventListener('click', function () {
-      setSkin(btn.dataset.skinBtn);
-      Array.prototype.forEach.call(document.querySelectorAll('[data-skin-btn]'), function (b) {
-        b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
-      });
-      saveState();
-    });
-  });
-  setSkin((saved && saved.skin) || appEl.dataset.skin);
-  Array.prototype.forEach.call(document.querySelectorAll('[data-skin-btn]'), function (b) {
-    b.setAttribute('aria-pressed', b.dataset.skinBtn === appEl.dataset.skin ? 'true' : 'false');
-  });
-
   render();
 })();
 </script>
+</body>
+</html>
