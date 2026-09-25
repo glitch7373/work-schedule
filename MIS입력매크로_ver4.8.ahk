@@ -93,7 +93,7 @@ CreateAndShowMainGui()
     Gui, Color, F0F4F8, FFFFFF
 
     Gui, Font, s13 Bold, 맑은 고딕
-    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver4.7-Dev 🚆
+    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver4.8-Dev 🚆
 
     ; 현재 접속 환경 안내 배지 및 변경 버튼
     ModeText := (G_EnvMode = "APP") ? "💻 접속환경: [MIS 앱 접속] (Y-10px / 전용 이미지 / 행 이동 최적화)" : "🌐 접속환경: [그룹웨어 웹 접속] (표준 좌표 / 웹 표준 설정)"
@@ -174,7 +174,7 @@ CreateAndShowMainGui()
     GuiControl, 1:Text, Var_확인자, % GetStaffDisplayWithID(G_SavedChecker)
     GuiControl, 1:Text, Var_담당자, % GetStaffDisplayWithID(G_SavedManager)
 
-    Gui, Show, Center w500 h805, MIS입력 매크로 ver4.7-Dev
+    Gui, Show, Center w500 h805, MIS입력 매크로 ver4.8-Dev
 
     ValidateStaffInputs()
     UpdateExcelStatusAndButtons()
@@ -1142,9 +1142,8 @@ IsHangDialogActive()
     WinGetTitle, ActTitle, A
     if InStr(ActTitle, "응답 없음") || InStr(ActTitle, "Not Responding")
         return True
-    WinGetText, ActText, A
-    if InStr(ActText, "응답하지 않") || InStr(ActText, "프로그램 닫기")
-        return True
+    ; 🌟 [v4.8] WinGetText 제거: 로딩 중인 MIS 앱의 모든 컨트롤에 메시지를 보내
+    ;    오히려 앱을 불안정하게 만들 수 있음 (창 제목/프로세스만 확인)
     return False
 }
 
@@ -1195,7 +1194,17 @@ ConfirmPopup(Keys, TimeoutSec := 15, GwDelayMs := 0)
         ActHwnd := WinExist("A")
         if (ActHwnd && ActHwnd != G_MisHwnd && ActPid = G_MisPid && !IsHangDialogActive())
         {
-            Sleep, 500                 ; 팝업 그리기 완료까지 잠깐 대기
+            ; 🌟 [v4.8] 새 창이 "저장 중..." 같은 진행창일 수 있으므로
+            ;    앱이 입력 대기 상태(로딩 끝)가 되고, 같은 창이 여전히 떠 있을 때만 전송
+            WinGetTitle, PopTitle, ahk_id %ActHwnd%
+            WinGetClass, PopClass, ahk_id %ActHwnd%
+            UpdateDashboard("🔎 팝업 감지: [" . PopTitle . "] (" . PopClass . ")")
+            WaitAppReady(90, 800)
+            if (WinExist("A") != ActHwnd)
+            {
+                Sleep, 100             ; 진행창이 닫힘 → 진짜 확인 팝업을 다시 기다림
+                continue
+            }
             Send, %Keys%
             Sleep, 500
             WaitAppReady(90, 1500)
