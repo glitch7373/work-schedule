@@ -29,7 +29,7 @@ global G_EnvMode := "GW", G_YOffset := 0
 global Var_DashProg, Var_DashStep, Var_DashStaff
 
 ; 🌟 [v4.4] MIS 앱 창 핸들 (로딩/응답없음 감지용)
-global G_MisHwnd := 0
+global G_MisHwnd := 0, G_MisPid := 0
 
 ; 시작 시 이전 저장 설정 및 최근 사번 목록 자동 로드
 LoadSettings()
@@ -93,7 +93,7 @@ CreateAndShowMainGui()
     Gui, Color, F0F4F8, FFFFFF
 
     Gui, Font, s13 Bold, 맑은 고딕
-    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver4.4-Dev 🚆
+    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver4.5-Dev 🚆
 
     ; 현재 접속 환경 안내 배지 및 변경 버튼
     ModeText := (G_EnvMode = "APP") ? "💻 접속환경: [MIS 앱 접속] (Y-10px / 전용 이미지 / 행 이동 최적화)" : "🌐 접속환경: [그룹웨어 웹 접속] (표준 좌표 / 웹 표준 설정)"
@@ -174,7 +174,7 @@ CreateAndShowMainGui()
     GuiControl, 1:Text, Var_확인자, % GetStaffDisplayWithID(G_SavedChecker)
     GuiControl, 1:Text, Var_담당자, % GetStaffDisplayWithID(G_SavedManager)
 
-    Gui, Show, Center w500 h805, MIS입력 매크로 ver4.4-Dev
+    Gui, Show, Center w500 h805, MIS입력 매크로 ver4.5-Dev
 
     ValidateStaffInputs()
     UpdateExcelStatusAndButtons()
@@ -1019,7 +1019,12 @@ UpdateDashboard(StepText := "")
     static GuiCreated := False
 
     if (StepText != "")
+    {
         CurrentStepText := StepText
+        ; 🌟 [v4.5] 진행 단계 로그 (앱이 꺼진 시점 추적용)
+        FormatTime, LogTime,, yyyy-MM-dd HH:mm:ss
+        FileAppend, % LogTime . "  [" . CurrentVehicleIndex . "/" . TotalCount . "]  " . StepText . "`n", %A_ScriptDir%\macro_log.txt, UTF-8
+    }
 
     Ratio := (TotalCount > 0) ? CurrentVehicleIndex / TotalCount : 0
     Filled := Round(Ratio * 10)
@@ -1080,7 +1085,7 @@ DestroyDashboard()
 ; =================================================================
 WaitAppReady(MaxWaitSec := 90)
 {
-    global G_EnvMode, G_MisHwnd
+    global G_EnvMode, G_MisHwnd, G_MisPid, CurrentStepText
     if (G_EnvMode != "APP" || !G_MisHwnd)
         return True
 
@@ -1089,7 +1094,14 @@ WaitAppReady(MaxWaitSec := 90)
     {
         ; MIS 앱 창이 사라졌으면 즉시 매크로 중단 (빈 화면에 계속 입력하는 것 방지)
         if (!WinExist("ahk_id " G_MisHwnd))
-            AbortMacro("MIS 앱 창이 닫혔습니다.")
+        {
+            ; 🌟 [v4.5] 창 핸들이 바뀐 것뿐인지(화면 전환 등) 프로세스로 재확인
+            Process, Exist, %G_MisPid%
+            NewHwnd := ErrorLevel ? WinExist("ahk_pid " G_MisPid) : 0
+            if (!NewHwnd)
+                AbortMacro("MIS 앱이 종료되었습니다. (단계: " . CurrentStepText . ")")
+            G_MisHwnd := NewHwnd
+        }
 
         Busy := False
         if DllCall("IsHungAppWindow", "Ptr", G_MisHwnd)       ; 응답 없음 상태
@@ -1185,6 +1197,7 @@ ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
     if (ErrorLevel = 0)
     {
         G_MisHwnd := WinExist("인천교통공사 통합경영정보시스템")
+        WinGet, G_MisPid, PID, ahk_id %G_MisHwnd%
         WinMaximize, ahk_id %G_MisHwnd%
         WinActivate, ahk_id %G_MisHwnd%
     }
@@ -1528,8 +1541,16 @@ DoubleClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500) {
 ; =================================================================
 SearchAndClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500, ClickCount := 1)
 {
-    global ImageFolder, Variation
+    global ImageFolder, Variation, G_EnvMode
     ImagePath := ImageFolder "\" ImageName
+
+    ; 🌟 [v4.5] MIS앱 모드: "이름(MIS앱 환경).png" 전용 이미지가 있으면 우선 사용
+    if (G_EnvMode = "APP")
+    {
+        AppPath := RegExReplace(ImagePath, "i)\.png$", "(MIS앱 환경).png")
+        if (FileExist(AppPath))
+            ImagePath := AppPath
+    }
 
     if (!FileExist(ImagePath))
     {
@@ -1543,7 +1564,8 @@ SearchAndClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500, ClickCount :=
     WaitAppReady()
 
     StartTime := A_TickCount, MaxWaitMs := MaxWaitSec * 1000
-    VarTolerances := [30, 60, 90]
+    ; 🌟 [v4.5] [종료] 버튼은 앱 전체 종료 버튼과 헷갈리지 않도록 오차 확대 금지
+    VarTolerances := InStr(ImageName, "종료") ? [30, 30, 30] : [30, 60, 90]
 
     Loop
     {
