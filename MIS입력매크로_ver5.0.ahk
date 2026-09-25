@@ -29,7 +29,7 @@ global G_EnvMode := "GW", G_YOffset := 0
 global Var_DashProg, Var_DashStep, Var_DashStaff
 
 ; 🌟 [v4.4] MIS 앱 창 핸들 (로딩/응답없음 감지용)
-global G_MisHwnd := 0, G_MisPid := 0
+global G_MisHwnd := 0, G_MisPid := 0, G_LastClickX := 0, G_LastClickY := 0
 
 ; 시작 시 이전 저장 설정 및 최근 사번 목록 자동 로드
 LoadSettings()
@@ -1365,7 +1365,7 @@ ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
         Sleep, 1500
         ClickImage("공정작업일반.png", 15, 1200)
         if (G_EnvMode = "APP")
-            ClickImage("공정작업일반.png", 5, 500)
+            SafeClick(G_LastClickX, G_LastClickY)   ; 같은 위치 한 번 더 클릭
         LoadWait(1000)
         ClickImage("입력.png", 20, 1500)
         LoadWait(1500)
@@ -1588,7 +1588,7 @@ DoubleClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500) {
 ; =================================================================
 SearchAndClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500, ClickCount := 1, OffX := 0, OffY := 0)
 {
-    global ImageFolder, Variation, G_EnvMode
+    global ImageFolder, Variation, G_EnvMode, G_LastClickX, G_LastClickY
     ImagePath := ImageFolder "\" ImageName
 
     ; 🌟 [v4.5] MIS앱 모드: "이름(MIS앱 환경).png" 전용 이미지가 있으면 우선 사용
@@ -1638,7 +1638,8 @@ SearchAndClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500, ClickCount :=
         {
             ; 🌟 [v4.4] 클릭 직전에도 로딩 확인 → 클릭 → 클릭으로 시작된 로딩 끝날 때까지 대기
             WaitAppReady(90, IsLight ? 100 : 500)
-            MouseClick, left, % FoundX + 10 + OffX, % FoundY + 10 + OffY, %ClickCount%
+            G_LastClickX := FoundX + 10 + OffX, G_LastClickY := FoundY + 10 + OffY
+            MouseClick, left, %G_LastClickX%, %G_LastClickY%, %ClickCount%
             if (G_EnvMode = "APP")
                 Sleep, % IsLight ? 100 : 300   ; 🌟 [v4.7] MIS앱: 고정 대기 대신 아래 로딩 감지로 대기
             else
