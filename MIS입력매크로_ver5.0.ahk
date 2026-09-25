@@ -93,7 +93,7 @@ CreateAndShowMainGui()
     Gui, Color, F0F4F8, FFFFFF
 
     Gui, Font, s13 Bold, 맑은 고딕
-    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver4.9-Dev 🚆
+    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver5.0-Dev 🚆
 
     ; 현재 접속 환경 안내 배지 및 변경 버튼
     ModeText := (G_EnvMode = "APP") ? "💻 접속환경: [MIS 앱 접속] (Y-10px / 전용 이미지 / 행 이동 최적화)" : "🌐 접속환경: [그룹웨어 웹 접속] (표준 좌표 / 웹 표준 설정)"
@@ -174,7 +174,7 @@ CreateAndShowMainGui()
     GuiControl, 1:Text, Var_확인자, % GetStaffDisplayWithID(G_SavedChecker)
     GuiControl, 1:Text, Var_담당자, % GetStaffDisplayWithID(G_SavedManager)
 
-    Gui, Show, Center w500 h805, MIS입력 매크로 ver4.9-Dev
+    Gui, Show, Center w500 h805, MIS입력 매크로 ver5.0-Dev
 
     ValidateStaffInputs()
     UpdateExcelStatusAndButtons()
@@ -1359,7 +1359,13 @@ ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
 
         UpdateDashboard("📌 [2/8] 검사작업내역 이동 중")
         ClickImage("검사작업내역관리.png", 15, 2000)
+        ; 🌟 [v5.0] 화면이 그려지는 중이면 탭 클릭이 무시되는 경우가 있어
+        ;    1.5초 여유 후 클릭하고, 한 번 더 클릭해서 확실히 선택 (탭은 두 번 눌러도 무해)
+        UpdateDashboard("📌 [2/8-b] [공정작업일반] 탭 클릭 중")
+        Sleep, 1500
         ClickImage("공정작업일반.png", 15, 1200)
+        if (G_EnvMode = "APP")
+            ClickImage("공정작업일반.png", 5, 500)
         LoadWait(1000)
         ClickImage("입력.png", 20, 1500)
         LoadWait(1500)
@@ -1601,8 +1607,15 @@ SearchAndClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500, ClickCount :=
         return False
     }
 
+    ; 🌟 [v5.0] 버튼 무게별 대기 구분
+    ;   가벼운 메뉴 클릭(검사, 검사계획관리 등): 거의 기다리지 않음
+    ;   무거운 버튼(저장/종료 등): 3초 연속 조용할 때까지 대기
+    IsLight := RegExMatch(ImageName, "검사_N|검사계획관리|작업요청|Excel|공정작업일반|일반검사표|검사작업일반")
+    IsHeavy := RegExMatch(ImageName, "저장|종료|계획확정|표준점검항목복사|검사작업완료|승인요청|조회")
+    AfterStableMs := IsHeavy ? 3000 : IsLight ? 300 : 1500
+
     ; 🌟 [v4.4] 이전 동작의 로딩이 끝난 뒤에 탐색 시작
-    WaitAppReady()
+    WaitAppReady(90, IsLight ? 200 : 500)
 
     StartTime := A_TickCount, MaxWaitMs := MaxWaitSec * 1000
     ; 🌟 [v4.5] [종료] 버튼은 앱 전체 종료 버튼과 헷갈리지 않도록 오차 확대 금지
@@ -1624,15 +1637,15 @@ SearchAndClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500, ClickCount :=
         if (ErrorLevel = 0)
         {
             ; 🌟 [v4.4] 클릭 직전에도 로딩 확인 → 클릭 → 클릭으로 시작된 로딩 끝날 때까지 대기
-            WaitAppReady()
+            WaitAppReady(90, IsLight ? 100 : 500)
             MouseClick, left, % FoundX + 10 + OffX, % FoundY + 10 + OffY, %ClickCount%
             if (G_EnvMode = "APP")
-                Sleep, 300              ; 🌟 [v4.7] MIS앱: 고정 대기 대신 아래 로딩 감지로 대기
+                Sleep, % IsLight ? 100 : 300   ; 🌟 [v4.7] MIS앱: 고정 대기 대신 아래 로딩 감지로 대기
             else
                 Sleep, %PostSleep%
             ; 🌟 [v4.9] 저장/종료처럼 서버 처리가 긴 버튼은 커서가 안 바뀌는 "숨은 처리"가 있어
             ;    3초 연속 조용할 때까지 대기, 일반 버튼은 1.5초
-            WaitAppReady(90, RegExMatch(ImageName, "저장|종료|계획확정|표준점검항목복사|검사작업완료|승인요청|조회") ? 3000 : 1500)
+            WaitAppReady(90, AfterStableMs)
             return True
         }
 
