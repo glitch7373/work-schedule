@@ -93,7 +93,7 @@ CreateAndShowMainGui()
     Gui, Color, F0F4F8, FFFFFF
 
     Gui, Font, s13 Bold, 맑은 고딕
-    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver4.8-Dev 🚆
+    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver4.9-Dev 🚆
 
     ; 현재 접속 환경 안내 배지 및 변경 버튼
     ModeText := (G_EnvMode = "APP") ? "💻 접속환경: [MIS 앱 접속] (Y-10px / 전용 이미지 / 행 이동 최적화)" : "🌐 접속환경: [그룹웨어 웹 접속] (표준 좌표 / 웹 표준 설정)"
@@ -174,7 +174,7 @@ CreateAndShowMainGui()
     GuiControl, 1:Text, Var_확인자, % GetStaffDisplayWithID(G_SavedChecker)
     GuiControl, 1:Text, Var_담당자, % GetStaffDisplayWithID(G_SavedManager)
 
-    Gui, Show, Center w500 h805, MIS입력 매크로 ver4.8-Dev
+    Gui, Show, Center w500 h805, MIS입력 매크로 ver4.9-Dev
 
     ValidateStaffInputs()
     UpdateExcelStatusAndButtons()
@@ -1192,7 +1192,8 @@ ConfirmPopup(Keys, TimeoutSec := 15, GwDelayMs := 0)
     {
         WinGet, ActPid, PID, A
         ActHwnd := WinExist("A")
-        if (ActHwnd && ActHwnd != G_MisHwnd && ActPid = G_MisPid && !IsHangDialogActive())
+        WinGetClass, ActClass, ahk_id %ActHwnd%
+        if (ActHwnd && ActHwnd != G_MisHwnd && ActPid = G_MisPid && ActClass = "#32770")
         {
             ; 🌟 [v4.8] 새 창이 "저장 중..." 같은 진행창일 수 있으므로
             ;    앱이 입력 대기 상태(로딩 끝)가 되고, 같은 창이 여전히 떠 있을 때만 전송
@@ -1240,7 +1241,7 @@ LoadWait(GwMs)
 {
     global G_EnvMode
     if (G_EnvMode = "APP")
-        WaitAppReady()
+        WaitAppReady(90, (GwMs >= 3000) ? 3000 : 1500)   ; 🌟 [v4.9] 긴 대기 구간은 3초 연속 안정 확인
     else
         Sleep, %GwMs%
 }
@@ -1629,7 +1630,9 @@ SearchAndClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500, ClickCount :=
                 Sleep, 300              ; 🌟 [v4.7] MIS앱: 고정 대기 대신 아래 로딩 감지로 대기
             else
                 Sleep, %PostSleep%
-            WaitAppReady(90, 1500)      ; 🌟 [v4.6] 로딩이 늦게 시작되는 경우까지 대비해 1.5초 연속 정상 확인
+            ; 🌟 [v4.9] 저장/종료처럼 서버 처리가 긴 버튼은 커서가 안 바뀌는 "숨은 처리"가 있어
+            ;    3초 연속 조용할 때까지 대기, 일반 버튼은 1.5초
+            WaitAppReady(90, RegExMatch(ImageName, "저장|종료|계획확정|표준점검항목복사|검사작업완료|승인요청|조회") ? 3000 : 1500)
             return True
         }
 
