@@ -93,7 +93,7 @@ CreateAndShowMainGui()
     Gui, Color, F0F4F8, FFFFFF
 
     Gui, Font, s13 Bold, 맑은 고딕
-    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver4.5-Dev 🚆
+    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver4.6-Dev 🚆
 
     ; 현재 접속 환경 안내 배지 및 변경 버튼
     ModeText := (G_EnvMode = "APP") ? "💻 접속환경: [MIS 앱 접속] (Y-10px / 전용 이미지 / 행 이동 최적화)" : "🌐 접속환경: [그룹웨어 웹 접속] (표준 좌표 / 웹 표준 설정)"
@@ -174,7 +174,7 @@ CreateAndShowMainGui()
     GuiControl, 1:Text, Var_확인자, % GetStaffDisplayWithID(G_SavedChecker)
     GuiControl, 1:Text, Var_담당자, % GetStaffDisplayWithID(G_SavedManager)
 
-    Gui, Show, Center w500 h805, MIS입력 매크로 ver4.5-Dev
+    Gui, Show, Center w500 h805, MIS입력 매크로 ver4.6-Dev
 
     ValidateStaffInputs()
     UpdateExcelStatusAndButtons()
@@ -1083,7 +1083,7 @@ DestroyDashboard()
 ;     창을 띄우고, 매크로의 Enter가 그 창을 눌러 앱이 꺼지는 현상 방지
 ;   - 그룹웨어(웹) 모드에서는 아무것도 하지 않고 바로 통과
 ; =================================================================
-WaitAppReady(MaxWaitSec := 90)
+WaitAppReady(MaxWaitSec := 90, StableMs := 500)
 {
     global G_EnvMode, G_MisHwnd, G_MisPid, CurrentStepText
     if (G_EnvMode != "APP" || !G_MisHwnd)
@@ -1120,7 +1120,7 @@ WaitAppReady(MaxWaitSec := 90)
                 Notified := True
             }
         }
-        else if (++StableCnt >= 5)                            ; 0.5초 연속 정상 → 준비 완료
+        else if (++StableCnt * 100 >= StableMs)               ; StableMs 동안 연속 정상 → 준비 완료
             return True
 
         if ((A_TickCount - Start) > MaxWaitSec * 1000)
@@ -1169,6 +1169,46 @@ SafeClick(X, Y, ClickCount := 1)
     MouseClick, left, %X%, %Y%, %ClickCount%
     Sleep, 300
     WaitAppReady()
+}
+
+; =================================================================
+; 🌟 [v4.6] 확인 팝업이 "실제로 뜬 뒤에만" 키 전송
+;   - 팝업이 뜨기 전에 {Left}{Enter}를 보내면 로딩 중인 본 화면에 키가 들어가
+;     앱이 튕길 수 있음 → MIS 앱의 새 창(팝업)이 활성화될 때까지 최대 TimeoutSec 대기
+;   - 그룹웨어(웹) 모드는 기존과 동일하게 바로 전송
+; =================================================================
+ConfirmPopup(Keys, TimeoutSec := 15)
+{
+    global G_EnvMode, G_MisHwnd, G_MisPid
+    if (G_EnvMode != "APP" || !G_MisHwnd)
+    {
+        SafeSend(Keys)
+        return True
+    }
+
+    Start := A_TickCount
+    Loop
+    {
+        WinGet, ActPid, PID, A
+        ActHwnd := WinExist("A")
+        if (ActHwnd && ActHwnd != G_MisHwnd && ActPid = G_MisPid && !IsHangDialogActive())
+        {
+            Sleep, 500                 ; 팝업 그리기 완료까지 잠깐 대기
+            Send, %Keys%
+            Sleep, 500
+            WaitAppReady(90, 1500)
+            return True
+        }
+        if ((A_TickCount - Start) > TimeoutSec * 1000)
+        {
+            ; 별도 창이 아닌 팝업일 수 있으므로 로딩 확인 후 기존 방식으로 전송
+            UpdateDashboard("⚠️ 확인 팝업 창 미감지 → 로딩 확인 후 키 전송")
+            SafeSend(Keys)
+            WaitAppReady(90, 1500)
+            return False
+        }
+        Sleep, 100
+    }
 }
 
 AbortMacro(Reason)
@@ -1369,16 +1409,21 @@ ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
         UpdateDashboard("📌 [6.5/8] 검사표 대량 데이터 DB 커밋 대기 중 (10초)...")
         Sleep, 10000
 
-        UpdateDashboard("📌 [7/8] 검사표 항목 복사 및 수정 중")
+        UpdateDashboard("📌 [7/8-a] 일반검사표 탭 클릭 중")
         ClickImage("일반검사표.png", 15, 2000)
 
         ; [표준점검항목복사 직전 숨고르기]
         Sleep, 2500
+        UpdateDashboard("📌 [7/8-b] 표준점검항목복사 버튼 클릭 중")
         ClickImage("표준점검항목복사.png", 25, 1500)
-        SafeSend("{Left}{enter}")
+
+        UpdateDashboard("📌 [7/8-c] 복사 확인 팝업 대기 후 [예] 선택 중")
+        ConfirmPopup("{Left}{enter}")
 
         ; 복사 승인 후 대량 그리드 행 로딩 대기 (2.5초)
+        UpdateDashboard("📌 [7/8-d] 복사된 항목 로딩 대기 후 [수정] 클릭 중")
         Sleep, 2500
+        WaitAppReady(90, 2000)
         ClickImage("수정.png", 15, 2000)
         Sleep, 1000
 
@@ -1586,7 +1631,7 @@ SearchAndClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500, ClickCount :=
             WaitAppReady()
             MouseClick, left, % FoundX + 10, % FoundY + 10, %ClickCount%
             Sleep, %PostSleep%
-            WaitAppReady()
+            WaitAppReady(90, 1500)      ; 🌟 [v4.6] 로딩이 늦게 시작되는 경우까지 대비해 1.5초 연속 정상 확인
             return True
         }
 
