@@ -93,7 +93,7 @@ CreateAndShowMainGui()
     Gui, Color, F0F4F8, FFFFFF
 
     Gui, Font, s13 Bold, 맑은 고딕
-    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver4.6-Dev 🚆
+    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver4.7-Dev 🚆
 
     ; 현재 접속 환경 안내 배지 및 변경 버튼
     ModeText := (G_EnvMode = "APP") ? "💻 접속환경: [MIS 앱 접속] (Y-10px / 전용 이미지 / 행 이동 최적화)" : "🌐 접속환경: [그룹웨어 웹 접속] (표준 좌표 / 웹 표준 설정)"
@@ -174,7 +174,7 @@ CreateAndShowMainGui()
     GuiControl, 1:Text, Var_확인자, % GetStaffDisplayWithID(G_SavedChecker)
     GuiControl, 1:Text, Var_담당자, % GetStaffDisplayWithID(G_SavedManager)
 
-    Gui, Show, Center w500 h805, MIS입력 매크로 ver4.6-Dev
+    Gui, Show, Center w500 h805, MIS입력 매크로 ver4.7-Dev
 
     ValidateStaffInputs()
     UpdateExcelStatusAndButtons()
@@ -1177,11 +1177,13 @@ SafeClick(X, Y, ClickCount := 1)
 ;     앱이 튕길 수 있음 → MIS 앱의 새 창(팝업)이 활성화될 때까지 최대 TimeoutSec 대기
 ;   - 그룹웨어(웹) 모드는 기존과 동일하게 바로 전송
 ; =================================================================
-ConfirmPopup(Keys, TimeoutSec := 15)
+ConfirmPopup(Keys, TimeoutSec := 15, GwDelayMs := 0)
 {
     global G_EnvMode, G_MisHwnd, G_MisPid
     if (G_EnvMode != "APP" || !G_MisHwnd)
     {
+        if (GwDelayMs > 0)
+            Sleep, %GwDelayMs%
         SafeSend(Keys)
         return True
     }
@@ -1221,8 +1223,19 @@ AbortMacro(Reason)
 }
 
 ; =================================================================
-; 🌟 [공용 화면 입력 자동화 엔진 - 병목 구간 전/후 대기 완벽 보강]
+; 🌟 [v4.7] 데이터 로딩용 대기
+;   - MIS앱: 고정 대기 없이 "앱 준비 완료"까지만 대기 (WaitAppReady)
+;   - 그룹웨어(웹): 로딩 감지가 불가하므로 기존 고정 대기 시간 유지
 ; =================================================================
+LoadWait(GwMs)
+{
+    global G_EnvMode
+    if (G_EnvMode = "APP")
+        WaitAppReady()
+    else
+        Sleep, %GwMs%
+}
+
 ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
 {
     global
@@ -1241,8 +1254,7 @@ ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
         WinMaximize, ahk_id %G_MisHwnd%
         WinActivate, ahk_id %G_MisHwnd%
     }
-    Sleep, 1500
-    WaitAppReady()
+    LoadWait(1500)
 
     UpdateDashboard("📌 [사전 2/15] 좌측 메뉴 [검사(&N)] 클릭 중")
     ClickImage("검사_N.png", 15, 1000)
@@ -1266,33 +1278,29 @@ ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
         SendRaw, % GetValidExcelPath()
         Sleep, 500
         Send, {Enter}
-        Sleep, 1500
+        LoadWait(1500)
     }
 
     UpdateDashboard("📌 [사전 7/15] 업로드 완료 알림 확인 클릭 중")
-    SafeSend("{Enter}")
-    Sleep, 1000
+    ConfirmPopup("{Enter}")
 
-    ; 🌟 [핵심 개선] 엑셀 대량 데이터 화면 표(그리드) 안착 대기 (3.5초)
-    UpdateDashboard("📌 [사전 7.5/15] 엑셀 데이터 그리드 안착 대기 중 (3.5초)...")
-    Sleep, 3500
+    UpdateDashboard("📌 [사전 7.5/15] 엑셀 데이터 그리드 안착 대기 중...")
+    LoadWait(4500)
 
     UpdateDashboard("📌 [사전 8/15] 우측 툴바 [저장] 버튼 클릭 중")
     ClickImage("저장.png", 15, 1000)
-    Sleep, 800
-    SafeSend("{Enter}")
-    Sleep, 2000
+    ConfirmPopup("{Enter}", , 800)
+    LoadWait(2000)
 
     UpdateDashboard("📌 [사전 9/15] 연속 중복 팝업 감지 및 전체 확인 처리 중")
     HandleAllRepeatedPopups()
 
-    ; 엑셀 대량 저장 후 DB 커밋 및 내부 메모리 정리 완전 안정화 대기 (3.0초)
-    UpdateDashboard("📌 [사전 9.5/15] 데이터 저장 후처리 안정화 대기 중 (3초)...")
-    Sleep, 3000
+    UpdateDashboard("📌 [사전 9.5/15] 데이터 저장 후처리 안정화 대기 중...")
+    LoadWait(3000)
 
     UpdateDashboard("📌 [사전 10/15] [종료] 버튼 ➔ [검종] 버튼 클릭 중")
     ClickImage("종료.png", 30, 2000)
-    Sleep, 1500
+    LoadWait(1500)
 
     GumjongImg := (G_EnvMode = "APP") ? "검종(MIS앱 환경).png" : "검종.png"
     if (G_EnvMode = "APP" && !FileExist(ImageFolder "\" GumjongImg))
@@ -1304,7 +1312,7 @@ ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
     SafeSend("{Down " DownCount "}")
     Sleep, 400
     SafeSend("{Enter}")
-    Sleep, 1500
+    LoadWait(1500)
 
     UpdateDashboard("📌 [사전 12/15] [조회] 버튼 클릭 중")
     ClickImage("조회.png", 15, 2000)
@@ -1316,9 +1324,8 @@ ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
     ClickImage("계획확정.png", 15, 1000)
 
     UpdateDashboard("📌 [사전 15/15] 계획확정 승인 팝업 확인 클릭 중")
-    Sleep, 800
-    SafeSend("{Enter}")
-    Sleep, 1500
+    ConfirmPopup("{Enter}", , 800)
+    LoadWait(1500)
 
     ; -------------------------------------------------------------
     ; [반복 자동화 단계] N개 전동차 데이터 연속 기입
@@ -1326,7 +1333,7 @@ ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
     FocusY := 277 + G_YOffset
     UpdateDashboard("📌 [준비] 목록 포커스 초기화 클릭 (Y: " . FocusY . ")")
     SafeClick(355, FocusY)
-    Sleep, 600
+    Sleep, 300
 
     TotalCount := 차종List.Length()
 
@@ -1338,99 +1345,91 @@ ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
 
         UpdateDashboard("📌 [1/8] 차종 선택 진행 중 (Y: " . TargetY . ")")
         SafeClick(355, TargetY)
-        Sleep, 600
+        Sleep, 300
 
         UpdateDashboard("📌 [2/8] 검사작업내역 이동 중")
         ClickImage("검사작업내역관리.png", 15, 2000)
         ClickImage("공정작업일반.png", 15, 1200)
-
-        ; 🌟 [수정 반영] 공정작업일반 ➔ 입력 직전 1초 숨고르기
-        Sleep, 1000
+        LoadWait(1000)
         ClickImage("입력.png", 20, 1500)
-        Sleep, 1500
+        LoadWait(1500)
 
         UpdateDashboard("📌 [3/8] 시간/담당자 입력 중")
         SafeSend("{Tab}")
-        Sleep, 400
+        Sleep, 300
         SafeSendRaw(CurrentStart)
-        Sleep, 400
+        Sleep, 300
         SafeSendRaw(CurrentEnd)
-        Sleep, 400
+        Sleep, 300
         SafeSendRaw(P_담당자)
         Sleep, 300
         SafeSend("{enter}")
-        Sleep, 400
+        Sleep, 300
         SafeSend("100")
 
-        ; 🌟 [핵심 개선] 진도율(100) 입력 후 테이블 내부 계산 및 사번 유효성 검증 완전 완료 대기 (4초)
-        UpdateDashboard("📌 [3.5/8] 작업내역 수치 계산 및 데이터 안착 대기 중 (4초)...")
-        Sleep, 4000
+        UpdateDashboard("📌 [3.5/8] 작업내역 수치 계산 대기 중...")
+        LoadWait(4000)
 
-        ; [저장 단계]
         UpdateDashboard("📌 [4/8] 기본 작업내역 저장 중")
         ClickImage("저장.png", 15, 1000)
-        SafeSend("{enter}")
-        Sleep, 2000 ; 저장 후 2.0초 대기
+        UpdateDashboard("📌 [4/8-b] 저장 확인 팝업 대기 후 확인 중")
+        ConfirmPopup("{enter}")
+        LoadWait(2000)
 
-        UpdateDashboard("📌 [5/8] 검사표 데이터 작성 중")
+        UpdateDashboard("📌 [5/8-a] [검사표] 탭 클릭 중")
         ClickImage("검사표.png", 15, 1200)
-
-        ; 검사표 탭 로딩 대기 1.5초
-        Sleep, 1500
+        LoadWait(1500)
+        UpdateDashboard("📌 [5/8-b] 검사표 [입력] 클릭 중")
         ClickImage("입력.png", 20, 1500)
-        Sleep, 1500
+        LoadWait(1500)
 
+        UpdateDashboard("📌 [5/8-c] 검사표 데이터 입력 중")
         SafeSend(SheetCode)
-        Sleep, 400
+        Sleep, 300
         SafeSend("{tab 4}")
-        Sleep, 400
+        Sleep, 300
         SafeSend(time)
         SafeSend("{tab}")
-        Sleep, 400
+        Sleep, 300
         SafeSend(time)
         SafeSend("{tab}")
-        Sleep, 400
+        Sleep, 300
         SafeSendRaw(P_검사자)
         SafeSend("{tab}")
-        Sleep, 400
+        Sleep, 300
         SafeSendRaw(P_확인자)
         SafeSend("{tab}")
-        Sleep, 400
+        Sleep, 300
         SafeSendRaw(P_담당자)
         Sleep, 300
 
-        ; [저장 단계]
         UpdateDashboard("📌 [6/8] 검사표 입력 저장 중")
-        Sleep, 500
         ClickImage("저장.png", 15, 1000)
-        SafeSend("{enter}")
+        UpdateDashboard("📌 [6/8-b] 저장 확인 팝업 대기 후 확인 중")
+        ConfirmPopup("{enter}")
 
-        ; 🌟 [수정 반영] 검사표 대량 항목 DB 저장 및 백엔드 트랜잭션 완료 대기 (10초 대기!)
-        UpdateDashboard("📌 [6.5/8] 검사표 대량 데이터 DB 커밋 대기 중 (10초)...")
-        Sleep, 10000
+        UpdateDashboard("📌 [6.5/8] 검사표 데이터 DB 저장 대기 중...")
+        LoadWait(10000)
 
         UpdateDashboard("📌 [7/8-a] 일반검사표 탭 클릭 중")
         ClickImage("일반검사표.png", 15, 2000)
+        LoadWait(2500)
 
-        ; [표준점검항목복사 직전 숨고르기]
-        Sleep, 2500
         UpdateDashboard("📌 [7/8-b] 표준점검항목복사 버튼 클릭 중")
         ClickImage("표준점검항목복사.png", 25, 1500)
 
         UpdateDashboard("📌 [7/8-c] 복사 확인 팝업 대기 후 [예] 선택 중")
         ConfirmPopup("{Left}{enter}")
 
-        ; 복사 승인 후 대량 그리드 행 로딩 대기 (2.5초)
         UpdateDashboard("📌 [7/8-d] 복사된 항목 로딩 대기 후 [수정] 클릭 중")
-        Sleep, 2500
-        WaitAppReady(90, 2000)
+        LoadWait(2500)
         ClickImage("수정.png", 15, 2000)
-        Sleep, 1000
+        LoadWait(1000)
 
         if (SheetCode = "018") ; ★ 일상검사 (018) 사번 입력 정밀 루프
         {
-            UpdateDashboard("📌 [7/8-1] 일상검사 테이블 로딩 대기 중 (3초)...")
-            Sleep, 3000
+            UpdateDashboard("📌 [7/8-1] 일상검사 테이블 로딩 대기 중...")
+            LoadWait(3000)
 
             DailyCellY := 300 + G_YOffset
             SafeClick(740, DailyCellY)
@@ -1465,80 +1464,67 @@ ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
         else if (SheetCode = "020") ; 입고검사 (020)
         {
             SafeSend("{tab 3}")
-            Sleep, 400
+            Sleep, 300
             SafeSendRaw(P_검사자)
-            Sleep, 400
+            Sleep, 300
             SafeSend("{enter 5}")
-            Sleep, 400
+            Sleep, 300
             SafeSend("{tab 3}")
-            Sleep, 400
+            Sleep, 300
             SafeSendRaw(P_검사자)
-            Sleep, 400
+            Sleep, 300
             SafeSend("{enter 7}")
-            Sleep, 400
+            Sleep, 300
             SafeSend("{tab 6}")
-            Sleep, 400
+            Sleep, 300
             SafeSendRaw(P_검사자)
-            Sleep, 400
+            Sleep, 300
         }
         else ; 출고검사 (021)
         {
             SafeSend("{tab 3}")
-            Sleep, 400
+            Sleep, 300
             SafeSendRaw(P_검사자)
-            Sleep, 400
+            Sleep, 300
             SafeSend("{enter 6}")
-            Sleep, 400
+            Sleep, 300
             SafeSend("{tab 3}")
-            Sleep, 400
+            Sleep, 300
             SafeSendRaw(P_검사자)
-            Sleep, 400
+            Sleep, 300
         }
 
-        ; 🌟 [저장 단계]
-        Sleep, 500
+        UpdateDashboard("📌 [7/8-e] 검사표 최종 저장 중")
         ClickImage("저장.png", 15, 1500)
-        SafeSend("{enter}")
+        ConfirmPopup("{enter}")
 
-        ; 🌟 [수정 반영] 검사표 대량 항목 최종 저장 후에도 10초 넉넉히 대기!
-        UpdateDashboard("📌 [7/8-2] 검사표 데이터 DB 커밋 안정화 대기 중 (10초)...")
-        Sleep, 10000
+        UpdateDashboard("📌 [7/8-f] 검사표 데이터 DB 저장 대기 중...")
+        LoadWait(11500)
 
-        ; 닫기 직전 숨고르기 대기
-        Sleep, 1500
-
-        ; 종료 버튼 탐색 타임아웃 60초로 대폭 상향
-        UpdateDashboard("📌 [7/8-3] 검사표 닫기 [종료] 버튼 클릭 중...")
+        UpdateDashboard("📌 [7/8-g] 검사표 닫기 [종료] 버튼 클릭 중...")
         ClickImage("종료.png", 60, 2000)
+        LoadWait(2000)
 
-        ; 창이 완전히 닫히고 이전 메뉴로 복귀하는 안전 대기 2.0초
-        Sleep, 2000
-
-        UpdateDashboard("📌 [8/8] 승인요청 및 최종 마무리 중")
+        UpdateDashboard("📌 [8/8-a] 검사표 승인요청 중")
         ClickImage("검사표승인요청.png", 15, 1000)
-        SafeSend("{enter}")
-        Sleep, 1000
+        ConfirmPopup("{enter}")
+        LoadWait(1000)
 
-        ; 🌟 [수정 반영] 검사작업일반 클릭 후 다음 입력/조회 전 1초 숨고르기
+        UpdateDashboard("📌 [8/8-b] 검사작업일반 ➔ 조회 중")
         ClickImage("검사작업일반.png", 15, 1000)
-        Sleep, 1000
+        LoadWait(1000)
         ClickImage("조회.png", 15, 2000)
+        LoadWait(1500)
 
-        ; 검사작업완료 클릭 전 숨고르기
-        Sleep, 1500
-        ClickImage("검사작업완료.png", 20, 1500)
+        ; 🌟 [v4.7] 검사작업완료 버튼: 기존보다 오른쪽 6px, 위쪽 6px 더 이동해서 클릭
+        UpdateDashboard("📌 [8/8-c] 검사작업완료 클릭 및 승인 중")
+        ClickImage("검사작업완료.png", 20, 1500, 6, -6)
+        ConfirmPopup("{Left}{enter 2}", , 1500)
+        LoadWait(3000)
 
-        ; 확인용 팝업창이 화면에 확실히 뜰 때까지 1.5초 대기한 후 승인 키 전송
-        Sleep, 1500
-        SafeSend("{Left}{enter 2}")
-
-        ; 작업완료 DB 트랜잭션 반영 대기 2.0초
-        Sleep, 2000
-
-        ; 최종 종료 직전 숨고르기 대기 1.0초
-        Sleep, 1000
+        UpdateDashboard("📌 [8/8-d] 화면 [종료] 중")
         ClickImage("종료.png", 15, 2000)
-        Sleep, 1500
+        LoadWait(1500)
     }
 
     DestroyDashboard()
@@ -1573,8 +1559,8 @@ HandleAllRepeatedPopups()
     }
 }
 
-ClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500) {
-    return SearchAndClickImage(ImageName, MaxWaitSec, PostSleep, 1)
+ClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500, OffX := 0, OffY := 0) {
+    return SearchAndClickImage(ImageName, MaxWaitSec, PostSleep, 1, OffX, OffY)
 }
 
 DoubleClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500) {
@@ -1584,7 +1570,7 @@ DoubleClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500) {
 ; =================================================================
 ; [고도화 엔진] 단계별 오차 범위 에스컬레이션 이미지 탐색 함수
 ; =================================================================
-SearchAndClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500, ClickCount := 1)
+SearchAndClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500, ClickCount := 1, OffX := 0, OffY := 0)
 {
     global ImageFolder, Variation, G_EnvMode
     ImagePath := ImageFolder "\" ImageName
@@ -1629,8 +1615,11 @@ SearchAndClickImage(ImageName, MaxWaitSec := 15, PostSleep := 500, ClickCount :=
         {
             ; 🌟 [v4.4] 클릭 직전에도 로딩 확인 → 클릭 → 클릭으로 시작된 로딩 끝날 때까지 대기
             WaitAppReady()
-            MouseClick, left, % FoundX + 10, % FoundY + 10, %ClickCount%
-            Sleep, %PostSleep%
+            MouseClick, left, % FoundX + 10 + OffX, % FoundY + 10 + OffY, %ClickCount%
+            if (G_EnvMode = "APP")
+                Sleep, 300              ; 🌟 [v4.7] MIS앱: 고정 대기 대신 아래 로딩 감지로 대기
+            else
+                Sleep, %PostSleep%
             WaitAppReady(90, 1500)      ; 🌟 [v4.6] 로딩이 늦게 시작되는 경우까지 대비해 1.5초 연속 정상 확인
             return True
         }
