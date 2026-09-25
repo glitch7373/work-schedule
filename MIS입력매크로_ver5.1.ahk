@@ -93,7 +93,7 @@ CreateAndShowMainGui()
     Gui, Color, F0F4F8, FFFFFF
 
     Gui, Font, s13 Bold, 맑은 고딕
-    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver5.0-Dev 🚆
+    Gui, Add, Text, x20 y8 w460 Center c1E3A8A, 🚆 인천교통공사 MIS입력 매크로 ver5.1-Dev 🚆
 
     ; 현재 접속 환경 안내 배지 및 변경 버튼
     ModeText := (G_EnvMode = "APP") ? "💻 접속환경: [MIS 앱 접속] (Y-10px / 전용 이미지 / 행 이동 최적화)" : "🌐 접속환경: [그룹웨어 웹 접속] (표준 좌표 / 웹 표준 설정)"
@@ -174,7 +174,7 @@ CreateAndShowMainGui()
     GuiControl, 1:Text, Var_확인자, % GetStaffDisplayWithID(G_SavedChecker)
     GuiControl, 1:Text, Var_담당자, % GetStaffDisplayWithID(G_SavedManager)
 
-    Gui, Show, Center w500 h805, MIS입력 매크로 ver5.0-Dev
+    Gui, Show, Center w500 h805, MIS입력 매크로 ver5.1-Dev
 
     ValidateStaffInputs()
     UpdateExcelStatusAndButtons()
@@ -1246,9 +1246,40 @@ LoadWait(GwMs)
         Sleep, %GwMs%
 }
 
+; =================================================================
+; 🌟 [v5.1] MIS앱 모드: 사람이 치는 속도로 키 입력
+;   - 표 칸에 빠르게 입력하면 칸 이동(4자리 입력 후 자동 이동 등) 도중에
+;     글자가 들어가 앱 내부 데이터가 꼬이고, 이후 [저장] 때 튕기는 것으로 추정
+;   - 이 설정은 매크로 실행 스레드에만 적용됨 (그룹웨어 모드는 기존 기본값)
+; =================================================================
+ApplyInputMode()
+{
+    global G_EnvMode
+    if (G_EnvMode = "APP")
+    {
+        SendMode, Event
+        SetKeyDelay, 80, 40          ; 글자 간격 80ms, 누르는 시간 40ms
+        SetMouseDelay, 30
+    }
+    else
+    {
+        SendMode, Event
+        SetKeyDelay, 10, -1
+        SetMouseDelay, 10
+    }
+}
+
+; 입력 칸 사이 간격 (MIS앱은 칸 이동이 끝날 시간을 넉넉히)
+FieldGap(GwMs := 300)
+{
+    global G_EnvMode
+    Sleep, % (G_EnvMode = "APP") ? 800 : GwMs
+}
+
 ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
 {
     global
+    ApplyInputMode()
     FormatTime, time,, yyyyMMdd
 
     MsgBox, 64, 업무 자동화 시작, % "[" . TaskTitle . "] 매크로를 실행합니다.`n`n📌 인천교통공사 MIS 창을 띄워놓아 주세요.`n(접속 환경: " . (G_EnvMode="APP" ? "MIS앱 (최적화 모드)" : "그룹웨어 웹") . ")`n`n(비상 강제종료: Esc / 일시정지: Shift + Enter)"
@@ -1372,16 +1403,17 @@ ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
 
         UpdateDashboard("📌 [3/8] 시간/담당자 입력 중")
         SafeSend("{Tab}")
-        Sleep, 300
+        FieldGap()
         SafeSendRaw(CurrentStart)
-        Sleep, 300
+        FieldGap()
         SafeSendRaw(CurrentEnd)
-        Sleep, 300
+        FieldGap()
         SafeSendRaw(P_담당자)
-        Sleep, 300
+        FieldGap()
         SafeSend("{enter}")
-        Sleep, 300
+        FieldGap()
         SafeSend("100")
+        FieldGap()
 
         UpdateDashboard("📌 [3.5/8] 작업내역 수치 계산 대기 중...")
         LoadWait(4000)
@@ -1401,23 +1433,27 @@ ExecuteMacroEngine(TaskTitle, 차종List, 시작List, 종료List, SheetCode)
 
         UpdateDashboard("📌 [5/8-c] 검사표 데이터 입력 중")
         SafeSend(SheetCode)
-        Sleep, 300
+        FieldGap()
         SafeSend("{tab 4}")
-        Sleep, 300
+        FieldGap()
         SafeSend(time)
+        FieldGap(0)
         SafeSend("{tab}")
-        Sleep, 300
+        FieldGap()
         SafeSend(time)
+        FieldGap(0)
         SafeSend("{tab}")
-        Sleep, 300
+        FieldGap()
         SafeSendRaw(P_검사자)
+        FieldGap(0)
         SafeSend("{tab}")
-        Sleep, 300
+        FieldGap()
         SafeSendRaw(P_확인자)
+        FieldGap(0)
         SafeSend("{tab}")
-        Sleep, 300
+        FieldGap()
         SafeSendRaw(P_담당자)
-        Sleep, 300
+        FieldGap()
 
         UpdateDashboard("📌 [6/8] 검사표 입력 저장 중")
         ClickImage("저장.png", 15, 1000)
